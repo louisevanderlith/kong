@@ -21,3 +21,7 @@ func (c Client) ResourceAllowed(resource string) bool {
 
 	return false
 }
+
+func (c Client) VerifySecret(secret string) bool {
+	return c.Secret == secret
+}

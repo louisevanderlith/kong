@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/go-session/session"
 	"log"
 	"net/http"
 	"strings"
@@ -12,9 +13,37 @@ import (
 	"github.com/louisevanderlith/kong/tokens"
 )
 
-func ClientMiddleware(name string) http.HandlerFunc {
+func ClientMiddleware(name, secret, authUrl string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		stor, err := session.Start(nil, w, r)
 
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write(nil)
+			return
+		}
+
+		tkn, ok := stor.Get("access.token")
+
+		if !ok {
+			log.Println(err)
+			w.Header().Add("Location", authUrl + "/consent")
+			w.WriteHeader(http.StatusFound)
+			return
+		}
+
+		claims, err := Exchange(tkn.(string), name, secret, authUrl+"/info")
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write(nil)
+			return
+		}
+
+		context.WithValue(r.Context(), "claims", claims)
+		handle(w, r)
 	}
 }
 

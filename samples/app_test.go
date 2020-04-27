@@ -22,6 +22,7 @@ func TestHandleIndexGET_MusTfail(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
+
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+wwwtokn)
 	// add Bearer header

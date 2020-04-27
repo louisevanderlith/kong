@@ -3,6 +3,7 @@ package kong
 import (
 	"crypto/rsa"
 	"errors"
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/signing"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
@@ -17,24 +18,12 @@ type Authority struct {
 	SignCert  *rsa.PrivateKey
 }
 
-func (a Authority) Authorize(clientId, username, password string, claims ...string) (tokens.UserToken, error) {
-	idparts := strings.Split(clientId, ".")
+func (a Authority) Authorize(clientId, username, password string) (tokens.UserToken, error) {
+	//prof, clnt, err := a.GetProfileClient(id)
 
-	if len(idparts) != 2 {
-		return tokens.UserToken{}, errors.New("id is invalid")
-	}
-
-	prof, err := a.Profiles.GetProfile(idparts[0])
-
-	if err != nil {
-		return tokens.UserToken{}, err
-	}
-
-	_, err = prof.GetClient(idparts[1])
-
-	if err != nil {
-		return tokens.UserToken{}, err
-	}
+	//if err != nil {
+	//	return tokens.UserToken{}, err
+	//}
 
 	id, usr := a.Users.GetUserByName(username)
 
@@ -43,10 +32,18 @@ func (a Authority) Authorize(clientId, username, password string, claims ...stri
 	}
 
 	return tokens.UserToken{
-		Name:   usr.GetName(),
-		Key:    id,
-		Claims: claims,
+		Name: usr.GetName(),
+		Key:  id,
 	}, nil
+}
+
+func (a Authority) Consent(ut tokens.UserToken, claims ...string) (tokens.UserToken, error) {
+	if len(claims) == 0 {
+		return tokens.UserToken{}, errors.New("no consented claims")
+	}
+
+	ut.Claims = claims
+	return ut, nil
 }
 
 //RequestToken will return an Encoded token on success
@@ -55,19 +52,7 @@ func (a Authority) Authorize(clientId, username, password string, claims ...stri
 //ut: pre-authenticated user token
 //scopes: resources used by the requesting page.
 func (a Authority) RequestToken(id, secret string, ut tokens.UserToken, resources ...string) ([]byte, error) {
-	idparts := strings.Split(id, ".")
-
-	if len(idparts) != 2 {
-		return nil, errors.New("id is invalid")
-	}
-
-	prof, err := a.Profiles.GetProfile(idparts[0])
-
-	if err != nil {
-		return nil, err
-	}
-
-	clnt, err := prof.GetClient(idparts[1])
+	prof, clnt, err := a.GetProfileClient(id)
 
 	if err != nil {
 		return nil, err
@@ -107,6 +92,39 @@ func (a Authority) RequestToken(id, secret string, ut tokens.UserToken, resource
 	return fullClaims.Encode(&a.SignCert.PublicKey)
 }
 
+func (a Authority) Info(token, clientId, secret string) (tokens.Claimer, error) {
+	_, clnt, err := a.GetProfileClient(clientId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !clnt.VerifySecret(secret) {
+		return nil, errors.New("invalid secret")
+	}
+
+	accs, err := signing.DecodeToken(token, a.SignCert)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if accs.IsExpired() {
+		return nil, errors.New("token expired")
+	}
+
+	clms := accs.GetKong()
+
+	if accs.HasUser() {
+		nme := "user.name"
+		clms.AddClaim(nme, accs.GetClaim(nme))
+	}
+
+	clms.AddClaim("kong.client", accs.GetClient())
+
+	return clms, nil
+}
+
 func (a Authority) Inspect(token, resource, secret string) (tokens.Claimer, error) {
 	resrc, err := a.Resources.GetResource(resource)
 
@@ -124,7 +142,33 @@ func (a Authority) Inspect(token, resource, secret string) (tokens.Claimer, erro
 		return nil, err
 	}
 
+	if accs.IsExpired() {
+		return nil, errors.New("token expired")
+	}
+
 	return resrc.ExtractNeeds(accs)
+}
+
+func (a Authority) GetProfileClient(id string) (prime.Profile, prime.Client, error) {
+	idparts := strings.Split(id, ".")
+
+	if len(idparts) != 2 {
+		return prime.Profile{}, prime.Client{}, errors.New("id is invalid")
+	}
+
+	prof, err := a.Profiles.GetProfile(idparts[0])
+
+	if err != nil {
+		return prime.Profile{}, prime.Client{}, err
+	}
+
+	clnt, err := prof.GetClient(idparts[1])
+
+	if err != nil {
+		return prime.Profile{}, prime.Client{}, err
+	}
+
+	return prof, clnt, nil
 }
 
 /*

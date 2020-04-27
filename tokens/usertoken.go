@@ -15,3 +15,7 @@ func (u UserToken) ClaimAllowed(claim string) bool {
 
 	return false
 }
+
+func (u UserToken) Valid() bool {
+	return len(u.Claims) > 0
+}

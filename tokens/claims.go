@@ -14,6 +14,8 @@ import (
 type Claimer interface {
 	GetKong() Claimer
 	GetClient() string
+	HasUser() bool
+	GetUserinfo() (string, string) //key, username
 	IsExpired() bool
 	AddClaim(key, val string) error
 	AddClaims(more Claimer) error
@@ -27,6 +29,14 @@ type Claims map[string]string
 
 func (c Claims) GetClient() string {
 	return c["kong.client"]
+}
+
+func (c Claims) HasUser()  bool {
+	return c.HasClaim("user.key")
+}
+
+func (c Claims) GetUserinfo() (string, string) {
+	return c.GetClaim("user.key"), c.GetClaim("user.name")
 }
 
 func (c Claims) IsExpired() bool {

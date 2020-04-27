@@ -98,3 +98,77 @@ func TestHandleInspectPOST(t *testing.T) {
 		t.Error("unexpected claim value", clms["profile.name"])
 	}
 }
+
+func TestHandleInfoPOST(t *testing.T) {
+	tknReq := models.TokenReq{
+		UserToken: tokens.UserToken{},
+		Scope:     "profile",
+	}
+	tknobj, err := json.Marshal(tknReq)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/token", bytes.NewBuffer(tknobj))
+	req.SetBasicAuth("kong.www", "secret")
+	rr := httptest.NewRecorder()
+	controllers.HandleTokenPOST(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatal(rr.Code, rr.Body.String())
+		return
+	}
+
+	body := rr.Body.String()
+	if len(body) == 0 {
+		t.Error("no body")
+	}
+	log.Println(body)
+	insReq := prime.InspectReq{AccessCode: body}
+	obj, err := json.Marshal(insReq)
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	ireq := httptest.NewRequest(http.MethodPost, "/info", bytes.NewBuffer(obj))
+	ireq.SetBasicAuth("kong.www", "secret")
+	irr := httptest.NewRecorder()
+	controllers.HandleInfoPOST(irr, ireq)
+
+	if irr.Code != http.StatusOK {
+		t.Fatal(irr.Code, irr.Body.String())
+	}
+
+	clms := make(map[string]string)
+	dec := json.NewDecoder(irr.Body)
+	err = dec.Decode(&clms)
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	if clms["kong.profile"] != "kong" {
+		t.Error("unexpected claim value", clms["kong.profile"])
+	}
+}
+
+func TestHandleConsentGET(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/consent", nil)
+	rr := httptest.NewRecorder()
+	controllers.HandleConsentGET(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatal(rr.Code, rr.Body.String())
+		return
+	}
+
+	body := rr.Body.String()
+	if len(body) == 0 {
+		t.Error("no body")
+	}
+}
