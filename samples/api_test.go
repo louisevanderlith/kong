@@ -18,7 +18,7 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	// add Bearer header
 	rr := httptest.NewRecorder()
 
-	handle := kong.ResourceMiddleware("api.view.profile", controllers.HandleProfileGET, ins)
+	handle := kong.ResourceMiddleware("api.view.profile", "secret", "https://localhost:000", controllers.HandleProfileGET)
 	handle(rr, req)
 
 	if rr.Code != http.StatusOK {

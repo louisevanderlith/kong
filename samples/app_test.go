@@ -22,7 +22,7 @@ func TestHandleIndexGET_MusTfail(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Authorization", "Bearer "+wwwtokn)
 	// add Bearer header
 	rr := httptest.NewRecorder()
@@ -38,7 +38,7 @@ func TestHandleIndexGET_MusTfail(t *testing.T) {
 func getWWWToken() (string, error) {
 	tknReq := models.TokenReq{
 		UserToken: tokens.UserToken{},
-		Scope:     "profile.info",
+		Scope:     "api.view.profile",
 	}
 	obj, err := json.Marshal(tknReq)
 
@@ -47,7 +47,7 @@ func getWWWToken() (string, error) {
 	}
 
 	req := httptest.NewRequest(http.MethodPost, "/token", bytes.NewBuffer(obj))
-	req.SetBasicAuth("kong.www", "secret")
+	req.SetBasicAuth("kong.viewr", "secret")
 	rr := httptest.NewRecorder()
 	controllers.HandleTokenPOST(rr, req)
 

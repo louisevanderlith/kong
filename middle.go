@@ -4,12 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/tokens"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/tokens"
 )
+
+func ClientMiddleware(name string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+	}
+}
 
 func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
