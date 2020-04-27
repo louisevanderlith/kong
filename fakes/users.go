@@ -8,13 +8,7 @@ type fakeUserStore struct {
 
 func NewFakeUS() fakeUserStore {
 	usrs := map[string]prime.User{
-		"00": {
-			Name:     "user1",
-			Verified: true,
-			Email:    "user@fake.com",
-			Password: "user1pass",
-			Contacts:  []prime.Contact{},
-		},
+		"00": prime.NewUser("user1", "user@fake.com", "user1pass", true, []prime.Contact{}),
 	}
 
 	return fakeUserStore{usrs}
@@ -26,10 +20,10 @@ func (us fakeUserStore) GetUser(id string) prime.User {
 
 func (us fakeUserStore) GetUserByName(username string) (string, prime.User) {
 	for k, v := range us.Users {
-		if v.Email == username {
+		if v.GetEmail() == username {
 			return k, v
 		}
 	}
 
-	return "", prime.User{}
+	return "", nil
 }

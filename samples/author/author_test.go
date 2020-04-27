@@ -3,7 +3,7 @@ package author_test
 import (
 	"bytes"
 	"encoding/json"
-	models2 "github.com/louisevanderlith/kong/models"
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/author/controllers"
 	"github.com/louisevanderlith/kong/samples/author/models"
 	"github.com/louisevanderlith/kong/tokens"
@@ -16,7 +16,7 @@ import (
 func TestHandleTokenPOST(t *testing.T) {
 	tknReq := models.TokenReq{
 		UserToken: tokens.UserToken{},
-		Scope:     "profile.info",
+		Scope:     "profile",
 	}
 	obj, err := json.Marshal(tknReq)
 
@@ -43,7 +43,7 @@ func TestHandleTokenPOST(t *testing.T) {
 func TestHandleInspectPOST(t *testing.T) {
 	tknReq := models.TokenReq{
 		UserToken: tokens.UserToken{},
-		Scope:     "profile.info",
+		Scope:     "profile",
 	}
 	tknobj, err := json.Marshal(tknReq)
 
@@ -67,7 +67,7 @@ func TestHandleInspectPOST(t *testing.T) {
 		t.Error("no body")
 	}
 	log.Println(body)
-	insReq := models2.InspectReq{AccessCode: body}
+	insReq := prime.InspectReq{AccessCode: body}
 	obj, err := json.Marshal(insReq)
 
 	if err != nil {
@@ -93,7 +93,7 @@ func TestHandleInspectPOST(t *testing.T) {
 		return
 	}
 
-	if clms["profile.info.name"] != "kong" {
-		t.Error("unexpected claim value", clms["profile.info.name"])
+	if clms["profile.name"] != "kong" {
+		t.Error("unexpected claim value", clms["profile.name"])
 	}
 }

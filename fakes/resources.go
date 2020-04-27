@@ -15,31 +15,31 @@ func NewFakeRS() fakeResourceStore {
 			Name:        "theme.assets.download",
 			DisplayName: "Download Theme assets",
 			Secret:      "secret",
-			Claims:      []string{"profile.info.name"},
+			Needs:       []string{"profile.name"},
 		},
 		{
 			Name:        "theme.assets.view",
 			DisplayName: "View Theme assets",
 			Secret:      "secret",
-			Claims:      []string{"profile.info.name"},
+			Needs:       []string{"profile.name"},
 		},
 		{
 			Name:        "artifact.download",
 			DisplayName: "Download Artifacts",
 			Secret:      "secret",
-			Claims:      nil,
+			Needs:       nil,
 		},
 		{
 			Name:        "api.view.profile",
 			DisplayName: "Displays the profile's information",
 			Secret:      "secret",
-			Claims:      []string{"profile.info.name"},
+			Needs:       []string{"profile.name"},
 		},
 		{
 			Name:        "api.view.user",
 			DisplayName: "Displays the user's information",
 			Secret:      "secret",
-			Claims:      []string{"user.info.name"},
+			Needs:       []string{"user.name", "user.key"},
 		},
 	}
 	return fakeResourceStore{rsrc}

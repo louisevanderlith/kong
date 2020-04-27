@@ -4,23 +4,32 @@ import (
 	"fmt"
 	"github.com/louisevanderlith/kong"
 	"github.com/louisevanderlith/kong/fakes"
+	"github.com/louisevanderlith/kong/signing"
 	"github.com/louisevanderlith/kong/tokens"
+	"log"
 	"testing"
 )
 
 var authr kong.Authority
 
 func init() {
+	signr, err := signing.Initialize("/", false)
+
+	if err != nil {
+		panic(err)
+	}
+
 	authr = kong.Authority{
 		Profiles:  fakes.NewFakePS(),
 		Users:     fakes.NewFakeUS(),
 		Resources: fakes.NewFakeRS(),
+		SignCert:  signr,
 	}
 }
 
 //TestAuthority_RequestToken_NoClient Tests that an error is returned when no client is found
 func TestAuthority_RequestToken_NoClient(t *testing.T) {
-	scp := "profile.info"
+	scp := "profile"
 	_, err := authr.RequestToken("kong.xxx", "secret", tokens.UserToken{}, scp)
 
 	if err == nil {
@@ -35,62 +44,30 @@ func TestAuthority_RequestToken_NoClient(t *testing.T) {
 
 //TestAuthority_RequestToken_HasClient Tests that the correct client is returned
 func TestAuthority_RequestToken_HasClient(t *testing.T) {
-	scp := "profile.info"
-	tkn, err := authr.RequestToken("kong.www", "secret", tokens.UserToken{}, scp)
+	rname := "api.view.profile"
+	tkn, err := authr.RequestToken("kong.viewr", "secret", tokens.UserToken{}, rname)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	claims, err := authr.Spill(string(tkn))
+	accs, err := authr.Inspect(string(tkn), rname, "secret")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if claims["kong.info.client"] != "www" {
-		t.Error("incorrect client", claims["kong.info.client"])
-	}
-}
-
-//TestAuthority_RequestToken_ProfileInfo_HasAllClaims Tests that all claims for a scope is included
-func TestAuthority_RequestToken_ProfileInfo_HasAllClaims(t *testing.T) {
-	resource := "profile.info"
-	accs, err := authr.RequestToken("kong.www", "secret", tokens.UserToken{}, scp)
-
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	answr := map[string]string{
-		"profile.info.profile": "",
-		"profile.info.logo":    "0`0",
-	}
-
-	fScop, _ := authr.Resources.GetResource(scp)
-
-	for _, v := range fScop.GetClaims() {
-		fullName := scp + "." + v
-		if !accs.HasClaim(fullName) {
-			t.Errorf(fmt.Sprintf("'%s' claim not found", v))
-			return
-		}
-
-		expct := answr[fullName]
-		actl := accs.GetClaim(fullName)
-		if actl == expct {
-			t.Errorf("found %s, expected %s", actl, expct)
-		}
+	if accs.GetClaim("kong.client") != "viewr" {
+		t.Error("incorrect client", accs)
 	}
 }
 
 //TestAuthority_RequestToken_ProfileInfo_HasAllClaims Tests that all claims for a scope is included
 func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
-	scp := "theme.assets.download"
-	accs, err := authr.RequestToken("kong.www", "secret", tokens.UserToken{}, scp)
+	rname := "theme.assets.download"
+	tkn, err := authr.RequestToken("kong.www", "secret", tokens.UserToken{}, rname)
 
 	if err != nil {
 		t.Error(err)
@@ -98,20 +75,26 @@ func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 	}
 
 	answr := map[string]string{
-		"profile": "",
+		"profile.name": "",
 	}
 
-	fScop, _ := authr.Scopes.GetScope(scp)
+	accs, err := authr.Inspect(string(tkn), rname, "secret")
 
-	for _, v := range fScop.GetClaims() {
-		fullName := scp + "." + v
-		if !accs.HasClaim(fullName) {
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	rsrc, _ := authr.Resources.GetResource(rname)
+
+	for _, v := range rsrc.Needs {
+		if !accs.HasClaim(v) {
 			t.Errorf(fmt.Sprintf("'%s' claim not found", v))
 			return
 		}
 
-		expct := answr[fullName]
-		actl := accs.GetClaim(fullName)
+		expct := answr[v]
+		actl := accs.GetClaim(v)
 		if actl == expct {
 			t.Errorf("found %s, expected %s", actl, expct)
 		}
@@ -119,7 +102,7 @@ func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 }
 
 func TestAuthority_RequestToken_UserInfo_InvalidUser(t *testing.T) {
-	scp := "user.info"
+	scp := "user"
 	_, err := authr.RequestToken("kong.admin", "secret", tokens.UserToken{}, scp)
 
 	if err == nil {
@@ -129,7 +112,7 @@ func TestAuthority_RequestToken_UserInfo_InvalidUser(t *testing.T) {
 }
 
 func TestAuthority_Authorize(t *testing.T) {
-	tkn, err := authr.Authorize("kong.admin", "user@fake.com", "user1pass", "user.info")
+	tkn, err := authr.Authorize("kong.admin", "user@fake.com", "user1pass", "user")
 
 	if err != nil {
 		t.Error(err)
@@ -142,41 +125,42 @@ func TestAuthority_Authorize(t *testing.T) {
 }
 
 func TestAuthority_RequestToken_UserInfo_ValidUser(t *testing.T) {
-	scp := "user.info"
-	tkn, err := authr.Authorize("kong.admin", "user@fake.com", "user1pass", scp)
+	scp := "api.view.user"
+	utkn, err := authr.Authorize("kong.admin", "user@fake.com", "user1pass", scp)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if tkn.Key != "00" {
+	if utkn.Key != "00" {
 		t.Error("invalid token")
 	}
 
-	accs, err := authr.RequestToken("kong.admin", "secret", tkn, scp)
+	tkn, err := authr.RequestToken("kong.viewr", "secret", utkn, scp)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
+	accs, err := authr.Inspect(string(tkn), "api.view.user", "secret")
+
 	answr := map[string]string{
-		"user.info.username": "",
-		"user.info.userkey":  "",
+		"user.name": "",
+		"user.key":  "",
 	}
 
-	fScop, _ := authr.Scopes.GetScope(scp)
-
-	for _, v := range fScop.GetClaims() {
-		fullName := scp + "." + v
-		if !accs.HasClaim(fullName) {
+	rsrc, _ := authr.Resources.GetResource(scp)
+	log.Println(accs.GetAll())
+	for _, v := range rsrc.Needs {
+		if !accs.HasClaim(v) {
 			t.Errorf(fmt.Sprintf("'%s' claim not found", v))
 			return
 		}
 
-		expct := answr[fullName]
-		actl := accs.GetClaim(fullName)
+		expct := answr[v]
+		actl := accs.GetClaim(v)
 		if actl == expct {
 			t.Errorf("found %s, expected %s", actl, expct)
 		}

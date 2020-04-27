@@ -29,8 +29,8 @@ func NewFakePS() fakeProfileStore {
 				{
 					Name:   "www",
 					Secret: "secret",
-					AllowedSopes: []string{
-						"profile.info",
+					AllowedResources: []string{
+						"profile",
 						"comms.messages.create",
 						"blog.articles.view",
 						"blog.articles.search",
@@ -42,9 +42,16 @@ func NewFakePS() fakeProfileStore {
 				{
 					Name:   "admin",
 					Secret: "secret",
-					AllowedSopes: []string{
-						"profile.info",
-						"user.info"},
+					AllowedResources: []string{
+						"profile",
+						"user"},
+				},
+				{
+					Name:   "viewr",
+					Secret: "secret",
+					AllowedResources: []string{
+						"api.view.profile",
+						"api.view.user"},
 				},
 			},
 			Endpoints: map[string]string{

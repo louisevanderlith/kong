@@ -3,7 +3,7 @@ package signing
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
@@ -12,20 +12,20 @@ import (
 	"os"
 )
 
-func DecodeToken(raw string, prvKey *rsa.PrivateKey) (tokens.Accessor, error) {
+func DecodeToken(raw string, prvKey *rsa.PrivateKey) (tokens.Claimer, error) {
 	tkn, err := hex.DecodeString(raw)
 
 	if err != nil {
 		return nil, err
 	}
 
-	dcryptd, err := rsa.DecryptOAEP(sha256.New(), rand.Reader, prvKey, tkn, []byte("access"))
+	dcryptd, err := rsa.DecryptOAEP(sha512.New(), rand.Reader, prvKey, tkn, []byte("access"))
 
 	if err != nil {
 		return nil, err
 	}
 
-	result := tokens.AccessToken{}
+	var result tokens.Claims
 	err = json.Unmarshal(dcryptd, &result)
 
 	if err != nil {

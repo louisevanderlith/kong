@@ -1,8 +1,19 @@
 package prime
 
-import "github.com/louisevanderlith/husk"
+import (
+	"errors"
+	"github.com/louisevanderlith/husk"
+)
 
-type User struct {
+type User interface {
+	GetName() string
+	GetEmail() string
+	IsVerified() bool
+	VerifyPassword(password string) bool
+	ProvideClaim(claim string) (string, error)
+}
+
+type user struct {
 	Name     string `hsk:"size(75)"`
 	Verified bool   `hsk:"default(false)"`
 	Email    string `hsk:"size(128)"`
@@ -10,25 +21,45 @@ type User struct {
 	Contacts Contacts
 }
 
-func (u User) Valid() (bool, error) {
+func NewUser(name, email, password string, verified bool, contacts Contacts) User {
+	return user{
+		Name: name,
+		Email: email,
+		Password: password,
+		Verified: verified,
+		Contacts: contacts,
+	}
+}
+
+func (u user) GetName() string {
+	return u.Name
+}
+
+func (u user) GetEmail() string {
+	return u.Email
+}
+
+func (u user) IsVerified() bool {
+	return u.Verified
+}
+
+func (u user) Valid() (bool, error) {
 	return husk.ValidateStruct(&u)
 }
 
-func (u User) VerifyPassword(password string) bool {
+func (u user) VerifyPassword(password string) bool {
 	return u.Password == password
 }
 
-func (u User) ProvideClaim(claim string) string {
-	result := ""
-
+func (u user) ProvideClaim(claim string) (string, error) {
 	switch claim {
 	case "name":
-		result = u.Name
+		return u.Name, nil
 	case "email":
-		result = u.Email
+		return u.Email, nil
 	default:
-		result = u.Contacts.ProvideClaim(claim)
+		return u.Contacts.ProvideClaim(claim)
 	}
 
-	return result
+	return "", errors.New("no claim found")
 }
