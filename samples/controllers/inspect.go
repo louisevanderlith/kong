@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"encoding/json"
-	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/samples/author/server"
 	"log"
 	"net/http"
+
+	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/samples/server"
 )
 
 func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {

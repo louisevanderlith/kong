@@ -1,12 +1,13 @@
-package api_test
+package samples
 
 import (
-	"github.com/louisevanderlith/kong"
-	"github.com/louisevanderlith/kong/samples/api/controllers"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/louisevanderlith/kong"
+	"github.com/louisevanderlith/kong/samples/controllers"
 )
 
 func TestResource_Middleware_SetContext(t *testing.T) {

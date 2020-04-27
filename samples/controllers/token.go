@@ -2,10 +2,11 @@ package controllers
 
 import (
 	"encoding/json"
-	"github.com/louisevanderlith/kong/samples/author/models"
-	"github.com/louisevanderlith/kong/samples/author/server"
 	"log"
 	"net/http"
+
+	"github.com/louisevanderlith/kong/samples/models"
+	"github.com/louisevanderlith/kong/samples/server"
 )
 
 func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
