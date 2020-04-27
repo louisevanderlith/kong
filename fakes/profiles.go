@@ -1,29 +1,31 @@
-package tests
+package fakes
 
 import (
 	"errors"
 	"github.com/louisevanderlith/husk"
-	"kong/models"
+	"github.com/louisevanderlith/kong/prime"
 	"strings"
 )
 
 type fakeProfileStore struct {
-	Profiles []models.Profile
+	Profiles []prime.Profile
 }
 
-func newFakePS() fakeProfileStore {
-	profs := []models.Profile{
+func NewFakePS() fakeProfileStore {
+	profs := []prime.Profile{
 		{
 			Title:       "kong",
 			Description: "Rollings claims authenticator",
 			Domain:      "",
-			Contact: models.Contact{
-				Icon:  "fa-facebook",
-				Name:  "facebook",
-				Value: "https://facebook/x",
+			Contacts: []prime.Contact{
+				{
+					Icon:  "fa-facebook",
+					Name:  "facebook",
+					Value: "https://facebook/x",
+				},
 			},
 			ImageKey: husk.CrazyKey(),
-			Clients: []models.Client{
+			Clients: []prime.Client{
 				{
 					Name:   "www",
 					Secret: "secret",
@@ -61,12 +63,12 @@ func newFakePS() fakeProfileStore {
 	return fakeProfileStore{profs}
 }
 
-func (ps fakeProfileStore) GetProfile(id string) (models.Profile, error) {
+func (ps fakeProfileStore) GetProfile(id string) (prime.Profile, error) {
 	for _, v := range ps.Profiles {
 		if strings.ToLower(v.Title) == id {
 			return v, nil
 		}
 	}
 
-	return models.Profile{}, errors.New("profile not found")
+	return prime.Profile{}, errors.New("profile not found")
 }

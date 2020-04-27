@@ -1,6 +1,6 @@
 package kong
 
 type TokenInfo struct {
-	Valid bool
+	Valid  bool
 	Claims map[string]string
 }
