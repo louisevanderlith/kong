@@ -1,17 +1,20 @@
 package prime
 
-import "github.com/louisevanderlith/husk"
+import (
+	"errors"
+	"github.com/louisevanderlith/husk"
+)
 
 type Contacts []Contact
 
-func (c Contacts) ProvideClaim(claim string) string {
+func (c Contacts) ProvideClaim(claim string) (string, error) {
 	for _, v := range c {
 		if v.Name == claim {
-			return v.Value
+			return v.Value, nil
 		}
 	}
 
-	return ""
+	return "", errors.New("no claim found")
 }
 
 //Contact holds information like email, facebook, cellphone

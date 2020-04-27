@@ -93,7 +93,7 @@ func loadPrivateKey(path string, saveCerts bool) (*rsa.PrivateKey, error) {
 func generateKeyPair(path string, saveCerts bool) (*rsa.PrivateKey, error) {
 	reader := rand.Reader
 
-	privKey, err := rsa.GenerateKey(reader, 2048)
+	privKey, err := rsa.GenerateKey(reader, 4096)
 
 	if err != nil {
 		return nil, err

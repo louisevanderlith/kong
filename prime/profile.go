@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/louisevanderlith/husk"
-	"log"
 )
 
 type Profile struct {
@@ -16,7 +15,7 @@ type Profile struct {
 	Clients     []Client
 	Endpoints   map[string]string
 	Codes       map[string]string
-	Terms       []string
+	Terms       map[string]string
 }
 
 func (p Profile) Valid() (bool, error) {
@@ -33,44 +32,39 @@ func (p Profile) GetClient(id string) (Client, error) {
 	return Client{}, errors.New("no such client")
 }
 
-func (p Profile) ProvideClaim(claim string) string {
-	result := ""
-
+func (p Profile) ProvideClaim(claim string) (string, error) {
 	switch claim {
 	case "name":
-		result = p.Title
+		return p.Title, nil
 	case "logo":
-		result = p.ImageKey.String()
+		return p.ImageKey.String(), nil
 	case "terms":
 		ts, err := json.Marshal(p.Terms)
 
 		if err != nil {
-			log.Println(err)
-			return ""
+			return "", err
 		}
 
-		result = string(ts)
+		return string(ts), nil
 	case "codes":
 		cds, err := json.Marshal(p.Codes)
 
 		if err != nil {
-			log.Println(err)
-			return ""
+			return "", err
 		}
 
-		result = string(cds)
+		return string(cds), nil
 	case "endpoints":
 		points, err := json.Marshal(p.Endpoints)
 
 		if err != nil {
-			log.Println(err)
-			return ""
+			return "", err
 		}
 
-		result = string(points)
+		return string(points), nil
 	default:
-		result = p.Contacts.ProvideClaim(claim)
+		return p.Contacts.ProvideClaim(claim)
 	}
 
-	return result
+	return "", errors.New("no claim found")
 }

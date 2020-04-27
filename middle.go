@@ -1,14 +1,17 @@
 package kong
 
 import (
+	"bytes"
 	"context"
-	"github.com/louisevanderlith/kong/inspectors"
+	"encoding/json"
+	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/tokens"
 	"log"
 	"net/http"
 	"strings"
 )
 
-func ResourceMiddleware(scope, secret string, handle http.HandlerFunc, ins inspectors.Inspector) http.HandlerFunc {
+func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		reqToken := r.Header.Get("Authorization")
 
@@ -33,7 +36,7 @@ func ResourceMiddleware(scope, secret string, handle http.HandlerFunc, ins inspe
 			return
 		}
 
-		claims, err := ins.Exchange(token, scope, secret)
+		claims, err := Exchange(token, name, secret, authUrl+"/inspect")
 
 		if err != nil {
 			log.Println(err)
@@ -45,4 +48,27 @@ func ResourceMiddleware(scope, secret string, handle http.HandlerFunc, ins inspe
 		context.WithValue(r.Context(), "claims", claims)
 		handle(w, r)
 	}
+}
+
+func Exchange(token, name, secret, inspectUrl string) (tokens.Claimer, error) {
+	insReq := prime.InspectReq{AccessCode: token}
+	obj, err := json.Marshal(insReq)
+	req, err := http.NewRequest(http.MethodPost, inspectUrl, bytes.NewBuffer(obj))
+	req.SetBasicAuth(name, secret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer req.Body.Close()
+
+	var clms tokens.Claims
+	dec := json.NewDecoder(req.Body)
+	err = dec.Decode(&clms)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return clms, nil
 }
