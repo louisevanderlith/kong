@@ -1,4 +1,4 @@
-package models
+package prime
 
 import "github.com/louisevanderlith/husk"
 
@@ -7,7 +7,7 @@ type User struct {
 	Verified bool   `hsk:"default(false)"`
 	Email    string `hsk:"size(128)"`
 	Password string `hsk:"min(6)"`
-	Contact  Contact
+	Contacts Contacts
 }
 
 func (u User) Valid() (bool, error) {
@@ -16,4 +16,19 @@ func (u User) Valid() (bool, error) {
 
 func (u User) VerifyPassword(password string) bool {
 	return u.Password == password
+}
+
+func (u User) ProvideClaim(claim string) string {
+	result := ""
+
+	switch claim {
+	case "name":
+		result = u.Name
+	case "email":
+		result = u.Email
+	default:
+		result = u.Contacts.ProvideClaim(claim)
+	}
+
+	return result
 }

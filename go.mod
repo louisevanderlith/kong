@@ -1,4 +1,4 @@
-module kong
+module github.com/louisevanderlith/kong
 
 go 1.13
 

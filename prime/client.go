@@ -1,4 +1,4 @@
-package models
+package prime
 
 import "github.com/louisevanderlith/husk"
 

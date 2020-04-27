@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"kong"
+	"github.com/louisevanderlith/kong"
 	"testing"
 )
 

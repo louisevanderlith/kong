@@ -2,14 +2,14 @@ package controllers
 
 import (
 	"encoding/json"
-	"github.com/louisevanderlith/kong/samples/author/models"
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/author/server"
 	"log"
 	"net/http"
 )
 
-func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
-	clnt, pass, ok := r.BasicAuth()
+func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
+	scp, pass, ok := r.BasicAuth()
 
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -18,7 +18,7 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dec := json.NewDecoder(r.Body)
-	req := models.TokenReq{}
+	req := prime.InspectReq{}
 	err := dec.Decode(&req)
 
 	if err != nil {
@@ -28,15 +28,23 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tkn, err := server.Author.RequestToken(clnt, pass, req.UserToken, req.Scope)
+	claims, err := server.Author.Inspect(req.AccessCode, scp, pass)
 
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusBadRequest)
 		w.Write(nil)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write(tkn)
+	bits, err := json.Marshal(claims)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(nil)
+		return
+	}
+
+	w.Write(bits)
 }

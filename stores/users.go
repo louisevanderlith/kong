@@ -1,8 +1,8 @@
 package stores
 
-import "kong/models"
+import "github.com/louisevanderlith/kong/prime"
 
 type UserStore interface {
-	GetUser(id string) models.User
-	GetUserByName(username string) (string, models.User)
+	GetUser(id string) prime.User
+	GetUserByName(username string) (string, prime.User)
 }
