@@ -69,5 +69,5 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
-server.Author.Consent()
+//server.Author.Consent()
 }
