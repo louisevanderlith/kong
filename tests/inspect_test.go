@@ -1,35 +1,33 @@
 package tests
 
 import (
-	"kong"
-	"kong/scopes"
+	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/tokens"
 	"testing"
 )
 
 func TestInspect_ResourceRequest(t *testing.T) {
-	toknObj := kong.AccessToken{
-		Client: "www",
-		Scopes: []string{"theme.assets.download"},
-		Claims: map[string]string{
-			"profile": "kong",
-		},
-	}
+	toknObj := make(tokens.Claims)
+	toknObj.AddClaim("kong.client", "www")
+	toknObj.AddClaim("profile.name", "kong")
 
-	resrc := scopes.Resource{
+	resrc := prime.Resource{
 		Name:        "theme.assets.download",
 		DisplayName: "Download assets from Theme",
 		Secret:      "secret",
-		Claims:      []string{"profile"},
+		Needs:       []string{"profile.name"},
 	}
 
-	info, err := kong.InspectRequest(toknObj, resrc)
+	info, err := resrc.ExtractNeeds(toknObj)
 
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 
-	if info["profile"] != "kong"{
-		t.Errorf("found %s, expected 'kong'", info["profile"])
+	act := info.GetClaim("profile.name")
+	exp := "kong"
+	if act != exp {
+		t.Errorf("found %s, expected '%s'", act, exp)
 	}
 }

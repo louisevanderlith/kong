@@ -1,2 +1,4 @@
+github.com/go-session/session v3.1.2+incompatible h1:yStchEObKg4nk2F7JGE7KoFIrA/1Y078peagMWcrncg=
+github.com/go-session/session v3.1.2+incompatible/go.mod h1:8B3iivBQjrz/JtC68Np2T1yBBLxTan3mn/3OM0CyRt0=
 github.com/louisevanderlith/husk v1.4.0 h1:EDurxrOpUJ1lRyhb6TN/XpAYL6Ulgxqc19282wbb/UU=
 github.com/louisevanderlith/husk v1.4.0/go.mod h1:iEFeOL3LmBuXlHl3lhiq8yDfob2CNbv+p23ZjP5DORU=

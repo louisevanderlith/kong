@@ -1,7 +1,7 @@
 package stores
 
-import "kong/models"
+import "github.com/louisevanderlith/kong/prime"
 
 type ProfileStore interface {
-	GetProfile(id string) (models.Profile, error)
+	GetProfile(id string) (prime.Profile, error)
 }

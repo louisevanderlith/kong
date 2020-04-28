@@ -11,35 +11,28 @@ import (
 	"os"
 )
 
-var (
-	//PrivateKey is the private key used for signing tokens
-	PrivateKey *rsa.PrivateKey
-)
-
 const (
 	privateKeyFilename string = "sign_key.pem"
 	publicKeyFilename  string = "sign_pub.pem"
 )
 
 // Initialize creates a new Public/Private key pair for signing authentication requests, if no other keys exist
-func Initialize(path string) error {
-	key, err := loadPrivateKey(path)
+func Initialize(path string, saveCerts bool) (*rsa.PrivateKey, error) {
+	key, err := loadPrivateKey(path, saveCerts)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	PrivateKey = key
-
-	return nil
+	return key, nil
 }
 
-func loadPrivateKey(path string) (*rsa.PrivateKey, error) {
+func loadPrivateKey(path string, saveCerts bool) (*rsa.PrivateKey, error) {
 	privPath := path + privateKeyFilename
 	pubPath := path + publicKeyFilename
 	_, err := os.Stat(privPath)
 	if os.IsNotExist(err) {
-		return generateKeyPair(path)
+		return generateKeyPair(path, saveCerts)
 	}
 
 	if err != nil {
@@ -97,10 +90,10 @@ func loadPrivateKey(path string) (*rsa.PrivateKey, error) {
 }
 
 //generateKeyPair
-func generateKeyPair(path string) (*rsa.PrivateKey, error) {
+func generateKeyPair(path string, saveCerts bool) (*rsa.PrivateKey, error) {
 	reader := rand.Reader
 
-	privKey, err := rsa.GenerateKey(reader, 2048)
+	privKey, err := rsa.GenerateKey(reader, 4096)
 
 	if err != nil {
 		return nil, err
@@ -111,16 +104,18 @@ func generateKeyPair(path string) (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 
-	err = savePrivatePEMKey(path+privateKeyFilename, privKey)
+	if saveCerts {
+		err = savePrivatePEMKey(path+privateKeyFilename, privKey)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	err = savePublicPEMKey(path+publicKeyFilename, &privKey.PublicKey)
+		err = savePublicPEMKey(path+publicKeyFilename, &privKey.PublicKey)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return privKey, nil

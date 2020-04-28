@@ -1,11 +1,39 @@
 package signing
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha512"
 	"crypto/x509"
+	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
+	"github.com/louisevanderlith/kong/tokens"
 	"os"
 )
+
+func DecodeToken(raw string, prvKey *rsa.PrivateKey) (tokens.Claimer, error) {
+	tkn, err := hex.DecodeString(raw)
+
+	if err != nil {
+		return nil, err
+	}
+
+	dcryptd, err := rsa.DecryptOAEP(sha512.New(), rand.Reader, prvKey, tkn, []byte("access"))
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result tokens.Claims
+	err = json.Unmarshal(dcryptd, &result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
 
 func savePEMKey(filename string, blck *pem.Block) error {
 	outFile, err := os.Create(filename)
