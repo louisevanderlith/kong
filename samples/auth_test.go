@@ -3,6 +3,7 @@ package samples
 import (
 	"bytes"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -157,17 +158,37 @@ func TestHandleInfoPOST(t *testing.T) {
 	}
 }
 
-func TestHandleConsentGET(t *testing.T) {
+func TestHandleConsentGET_NotAuthenticated(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/consent", nil)
 	rr := httptest.NewRecorder()
 	controllers.HandleConsentGET(rr, req)
 
-	if rr.Code != http.StatusOK {
+	resp := rr.Result()
+	url, err := resp.Location()
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	if url.Path != "/login" {
+		t.Errorf("invalid url %s", url)
+		return
+	}
+
+	if rr.Code != http.StatusFound {
 		t.Fatal(rr.Code, rr.Body.String())
 		return
 	}
 
-	body := rr.Body.String()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	log.Println(body)
 	if len(body) == 0 {
 		t.Error("no body")
 	}
