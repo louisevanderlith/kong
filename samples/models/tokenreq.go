@@ -5,6 +5,6 @@ import (
 )
 
 type TokenReq struct {
-	UserToken tokens.UserToken
-	Scope     string
+	UserToken tokens.Claims
+	Scopes    []string
 }

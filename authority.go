@@ -3,6 +3,7 @@ package kong
 import (
 	"crypto/rsa"
 	"errors"
+	"github.com/gorilla/sessions"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/signing"
 	"github.com/louisevanderlith/kong/stores"
@@ -16,33 +17,44 @@ type Authority struct {
 	Users     stores.UserStore
 	Resources stores.ResourceStore
 	SignCert  *rsa.PrivateKey
+	Cookies   sessions.Store
 }
 
-func (a Authority) Authorize(clientId, username, password string) (tokens.UserToken, error) {
-	//prof, clnt, err := a.GetProfileClient(id)
+func (a Authority) Authorize(clientId, username, password string) (tokens.Claimer, error) {
+	prof, clnt, err := a.GetProfileClient(clientId)
 
-	//if err != nil {
-	//	return tokens.UserToken{}, err
-	//}
+	if err != nil {
+		return nil, err
+	}
 
 	id, usr := a.Users.GetUserByName(username)
 
-	if !usr.VerifyPassword(password) {
-		return tokens.UserToken{}, errors.New("invalid user")
+	if usr == nil {
+		return nil, errors.New("invalid user")
 	}
 
-	return tokens.UserToken{
-		Name: usr.GetName(),
-		Key:  id,
-	}, nil
+	if !usr.VerifyPassword(password) {
+		return nil, errors.New("invalid user")
+	}
+
+	result := make(tokens.Claims)
+	result.AddClaim("kong.id", clientId)
+	result.AddClaim("kong.profile", prof.Title)
+	result.AddClaim("kong.client", clnt.Name)
+	result.AddClaim("kong.iat", time.Now().Format("2006-01-02T15:04:05"))
+	result.AddClaim("kong.exp", time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
+	result.AddClaim("user.name", usr.GetName())
+	result.AddClaim("user.key", id)
+
+	return result, nil
 }
 
-func (a Authority) Consent(ut tokens.UserToken, claims ...string) (tokens.UserToken, error) {
+func (a Authority) Consent(ut tokens.Claimer, claims ...string) (tokens.Claimer, error) {
 	if len(claims) == 0 {
-		return tokens.UserToken{}, errors.New("no consented claims")
+		return nil, errors.New("no consented claims")
 	}
 
-	ut.Claims = claims
+	//ut.Claims = claims
 	return ut, nil
 }
 
@@ -51,39 +63,42 @@ func (a Authority) Consent(ut tokens.UserToken, claims ...string) (tokens.UserTo
 //secret: clientSecret
 //ut: pre-authenticated user token
 //scopes: resources used by the requesting page.
-func (a Authority) RequestToken(id, secret string, ut tokens.UserToken, resources ...string) ([]byte, error) {
+func (a Authority) RequestToken(id, secret string, ut tokens.Claimer, resources ...string) (string, error) {
 	prof, clnt, err := a.GetProfileClient(id)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if clnt.Secret != secret {
-		return nil, errors.New("client unauthorized")
+		return "", errors.New("client unauthorized")
 	}
 
 	fullClaims := make(tokens.Claims)
+	fullClaims.AddClaim("kong.id", id)
+	fullClaims.AddClaim("kong.profile", prof.Title)
 	fullClaims.AddClaim("kong.client", clnt.Name)
-	fullClaims.AddClaim("kong.iat", time.Now().String())
-	fullClaims.AddClaim("kong.exp", time.Now().Add(time.Minute*5).String())
+	fullClaims.AddClaim("kong.iat", time.Now().Format("2006-01-02T15:04:05"))
+	fullClaims.AddClaim("kong.exp", time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
 
-	usr := a.Users.GetUser(ut.Key)
+	_, k := ut.GetUserinfo()
+	usr := a.Users.GetUser(k)
 
 	for _, rsrc := range resources {
 		if !clnt.ResourceAllowed(rsrc) {
-			return nil, errors.New("scope not allowed")
+			return "", errors.New("scope not allowed")
 		}
 
 		resrc, err := a.Resources.GetResource(rsrc)
 
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
-		vals, err := resrc.AssignNeeds(prof, ut.Key, usr)
+		vals, err := resrc.AssignNeeds(prof, k, usr)
 
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
 		fullClaims.AddClaims(vals)

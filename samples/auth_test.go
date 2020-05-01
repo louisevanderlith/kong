@@ -3,10 +3,14 @@ package samples
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
+	http "net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/louisevanderlith/kong/prime"
@@ -15,80 +19,205 @@ import (
 	"github.com/louisevanderlith/kong/tokens"
 )
 
-func TestHandleTokenPOST(t *testing.T) {
+func ObtainToken(srvr *httptest.Server, clientId, secret string, scopes ...string) (string, error) {
 	tknReq := models.TokenReq{
-		UserToken: tokens.UserToken{},
-		Scope:     "api.view.profile",
+		UserToken: make(tokens.Claims),
+		Scopes:    scopes,
 	}
 	obj, err := json.Marshal(tknReq)
 
 	if err != nil {
-		t.Error(err)
-		return
+		return "", err
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/token", bytes.NewBuffer(obj))
-	req.SetBasicAuth("kong.viewr", "secret")
-	rr := httptest.NewRecorder()
-	controllers.HandleTokenPOST(rr, req)
+	req, err := http.NewRequest(http.MethodPost, srvr.URL+"/token", bytes.NewBuffer(obj))
+	req.SetBasicAuth(clientId, secret)
 
-	if rr.Code != http.StatusOK {
-		t.Fatal(rr.Code, rr.Body.String())
-		return
+	if err != nil {
+		return "", err
 	}
 
-	if len(rr.Body.String()) == 0 {
-		t.Error("no body")
+	resp, err := srvr.Client().Do(req)
+
+	if err != nil {
+		return "", err
 	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if len(body) == 0 {
+		return "", errors.New("no response")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(strings.Replace(string(body), "\n", "", 1))
+	}
+
+	return string(body), nil
 }
 
-func TestHandleInspectPOST(t *testing.T) {
-	tknReq := models.TokenReq{
-		UserToken: tokens.UserToken{},
-		Scope:     "profile",
-	}
-	tknobj, err := json.Marshal(tknReq)
+func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (map[string]string, error) {
+	insReq := prime.InspectReq{AccessCode: token}
+	obj, err := json.Marshal(insReq)
 
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, srvr.URL+"/inspect", bytes.NewBuffer(obj))
+	req.SetBasicAuth(resource, secret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := srvr.Client().Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s", resp.Status)
+	}
+
+	clms := make(map[string]string)
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&clms)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return clms, nil
+}
+
+func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (map[string]string, error) {
+	insReq := prime.InspectReq{AccessCode: token}
+	obj, err := json.Marshal(insReq)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, srvr.URL+"/info", bytes.NewBuffer(obj))
+	req.SetBasicAuth(clientId, secret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := srvr.Client().Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s", resp.Status)
+	}
+
+	clms := make(map[string]string)
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&clms)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return clms, nil
+}
+
+func ObtainUserLogin(srvr *httptest.Server, clientId, username, password string) (string, error) {
+	insReq := prime.LoginRequest{
+		Client:   clientId,
+		Username: username,
+		Password: password,
+	}
+	obj, err := json.Marshal(insReq)
+
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, srvr.URL+"/login", bytes.NewBuffer(obj))
+
+	if err != nil {
+		return "", err
+	}
+
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	clnt := srvr.Client()
+	clnt.Jar = jar
+	resp, err := clnt.Do(req)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%s", resp.Status)
+	}
+
+	clms := make(map[string]string)
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&clms)
+
+	if err != nil {
+		return "", err
+	}
+
+	return "nothing", nil
+}
+
+func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
+	ts := httptest.NewServer(GetAuthRoutes())
+	defer ts.Close()
+	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 	if err != nil {
 		t.Error(err)
 		return
 	}
+}
 
-	req := httptest.NewRequest(http.MethodPost, "/token", bytes.NewBuffer(tknobj))
-	req.SetBasicAuth("kong.www", "secret")
-	rr := httptest.NewRecorder()
-	controllers.HandleTokenPOST(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatal(rr.Code, rr.Body.String())
+func TestHandleTokenPOST_UserRequired(t *testing.T) {
+	ts := httptest.NewServer(GetAuthRoutes())
+	defer ts.Close()
+	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.user.view")
+	if err == nil {
+		t.Error("expecting error")
 		return
 	}
 
-	body := rr.Body.String()
-	if len(body) == 0 {
-		t.Error("no body")
+	if err.Error() != "user login required" {
+		t.Error("ERROR", err)
+		return
 	}
-	log.Println(body)
-	insReq := prime.InspectReq{AccessCode: body}
-	obj, err := json.Marshal(insReq)
+}
+
+func TestHandleInspectPOST(t *testing.T) {
+	ts := httptest.NewServer(GetAuthRoutes())
+	defer ts.Close()
+
+	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 
-	ireq := httptest.NewRequest(http.MethodPost, "/inspect", bytes.NewBuffer(obj))
-	ireq.SetBasicAuth("api.view.profile", "secret")
-	irr := httptest.NewRecorder()
-	controllers.HandleInspectPOST(irr, ireq)
-
-	if irr.Code != http.StatusOK {
-		t.Fatal(irr.Code, irr.Body.String())
-	}
-
-	clms := make(map[string]string)
-	dec := json.NewDecoder(irr.Body)
-	err = dec.Decode(&clms)
+	clms, err := ObtainInspection(ts, tkn, "api.profile.view", "secret")
 
 	if err != nil {
 		t.Fatal(err)
@@ -101,58 +230,23 @@ func TestHandleInspectPOST(t *testing.T) {
 }
 
 func TestHandleInfoPOST(t *testing.T) {
-	tknReq := models.TokenReq{
-		UserToken: tokens.UserToken{},
-		Scope:     "profile",
-	}
-	tknobj, err := json.Marshal(tknReq)
+	ts := httptest.NewServer(GetAuthRoutes())
+	defer ts.Close()
 
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	req := httptest.NewRequest(http.MethodPost, "/token", bytes.NewBuffer(tknobj))
-	req.SetBasicAuth("kong.www", "secret")
-	rr := httptest.NewRecorder()
-	controllers.HandleTokenPOST(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatal(rr.Code, rr.Body.String())
-		return
-	}
-
-	body := rr.Body.String()
-	if len(body) == 0 {
-		t.Error("no body")
-	}
-	log.Println(body)
-	insReq := prime.InspectReq{AccessCode: body}
-	obj, err := json.Marshal(insReq)
+	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 
-	ireq := httptest.NewRequest(http.MethodPost, "/info", bytes.NewBuffer(obj))
-	ireq.SetBasicAuth("kong.www", "secret")
-	irr := httptest.NewRecorder()
-	controllers.HandleInfoPOST(irr, ireq)
-
-	if irr.Code != http.StatusOK {
-		t.Fatal(irr.Code, irr.Body.String())
-	}
-
-	clms := make(map[string]string)
-	dec := json.NewDecoder(irr.Body)
-	err = dec.Decode(&clms)
+	clms, err := ObtainInfo(ts, tkn, "kong.viewr", "secret")
 
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
-
+	t.Log(clms)
 	if clms["kong.profile"] != "kong" {
 		t.Error("unexpected claim value", clms["kong.profile"])
 	}
@@ -180,16 +274,31 @@ func TestHandleConsentGET_NotAuthenticated(t *testing.T) {
 		t.Fatal(rr.Code, rr.Body.String())
 		return
 	}
+}
 
-	body, err := ioutil.ReadAll(resp.Body)
+func TestHandleLoginGET(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/login", nil)
+	rr := httptest.NewRecorder()
+	GetAuthRoutes().ServeHTTP(rr, req)
 
-	if err != nil {
-		t.Fatal(err)
+	if rr.Code != http.StatusOK {
+		t.Fatal(rr.Code, rr.Body.String())
 		return
 	}
 
-	log.Println(body)
-	if len(body) == 0 {
-		t.Error("no body")
+	log.Println(rr.Body.String())
+}
+
+func TestHandleLoginPOST(t *testing.T) {
+	ts := httptest.NewTLSServer(GetAuthRoutes())
+	defer ts.Close()
+
+	ut, err := ObtainUserLogin(ts, "kong.viewr", "user@fake.com", "user1pass")
+
+	if err != nil {
+		t.Error(err)
+		return
 	}
+
+	log.Println(ut)
 }

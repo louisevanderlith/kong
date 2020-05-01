@@ -30,13 +30,13 @@ func NewFakeRS() fakeResourceStore {
 			Needs:       nil,
 		},
 		{
-			Name:        "api.view.profile",
+			Name:        "api.profile.view",
 			DisplayName: "Displays the profile's information",
 			Secret:      "secret",
 			Needs:       []string{"profile.name"},
 		},
 		{
-			Name:        "api.view.user",
+			Name:        "api.user.view",
 			DisplayName: "Displays the user's information",
 			Secret:      "secret",
 			Needs:       []string{"user.name", "user.key"},

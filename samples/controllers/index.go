@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func HandelIndexGET(w http.ResponseWriter, r *http.Request) {
+func HandleIndexGET(w http.ResponseWriter, r *http.Request) {
 	claims := r.Context().Value("claims")
 
 	if claims == nil {

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -14,6 +15,7 @@ import (
 type Claimer interface {
 	GetKong() Claimer
 	GetClient() string
+	GetId() string
 	HasUser() bool
 	GetUserinfo() (string, string) //key, username
 	IsExpired() bool
@@ -22,7 +24,7 @@ type Claimer interface {
 	HasClaim(name string) bool
 	GetClaim(name string) string
 	GetAll() map[string]string
-	Encode(pubkey *rsa.PublicKey) ([]byte, error)
+	Encode(pubkey *rsa.PublicKey) (string, error)
 }
 
 type Claims map[string]string
@@ -31,7 +33,7 @@ func (c Claims) GetClient() string {
 	return c["kong.client"]
 }
 
-func (c Claims) HasUser()  bool {
+func (c Claims) HasUser() bool {
 	return c.HasClaim("user.key")
 }
 
@@ -46,7 +48,12 @@ func (c Claims) IsExpired() bool {
 		return true
 	}
 
-	exp, _ := time.Parse("", val)
+	exp, err := time.Parse("2006-01-02T15:04:05", val)
+
+	if err != nil {
+		log.Println(err)
+		return true
+	}
 
 	return time.Now().After(exp)
 }
@@ -94,22 +101,26 @@ func (c Claims) AddClaims(more Claimer) error {
 	return nil
 }
 
-func (c Claims) Encode(pubkey *rsa.PublicKey) ([]byte, error) {
+func (c Claims) Encode(pubkey *rsa.PublicKey) (string, error) {
 	bits, err := json.Marshal(c)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	ciphertxt, err := rsa.EncryptOAEP(sha512.New(), rand.Reader, pubkey, bits, []byte("access"))
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	val := hex.EncodeToString(ciphertxt)
 
-	return []byte(val), nil
+	return val, nil
+}
+
+func (c Claims) GetId() string {
+	return c["kong.id"]
 }
 
 func (c Claims) GetKong() Claimer {
