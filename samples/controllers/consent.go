@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"github.com/go-session/session"
 	"github.com/louisevanderlith/kong/samples/server"
 	"github.com/louisevanderlith/kong/signing"
 	"io"
@@ -12,15 +11,13 @@ import (
 )
 
 func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
-	store, err := session.Start(nil, w, r)
+	session, err := server.Author.Cookies.Get(r, "sess-store")
 	if err != nil {
-		log.Println("no session store", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	ut, ok := store.Get("user.token")
+	ut, ok := session.Values["user.token"]
 
 	if !ok {
 		w.Header().Set("Location", "/login")
@@ -38,8 +35,14 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, username := clms.GetUserinfo()
-	cname := clms.GetClient()
-	_, clnt, err := server.Author.GetProfileClient(cname)
+	_, clnt, err := server.Author.GetProfileClient(clms.GetId())
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(nil)
+		return
+	}
 
 	concern := strings.Builder{}
 
@@ -64,10 +67,10 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 		concern.WriteString("</ul></li>")
 	}
 
-	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", username, cname, concern.String())
+	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", username, clms.GetId(), concern.String())
 	io.WriteString(w, tmpl)
 }
 
 func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
-//server.Author.Consent()
+	//server.Author.Consent()
 }

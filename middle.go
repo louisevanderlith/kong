@@ -4,7 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/go-session/session"
+	"github.com/louisevanderlith/kong/samples/models"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -13,7 +17,7 @@ import (
 	"github.com/louisevanderlith/kong/tokens"
 )
 
-func ClientMiddleware(name, secret, authUrl string, handle http.HandlerFunc) http.HandlerFunc {
+func ClientMiddleware(clnt *http.Client, name, secret, authUrl string, handle http.HandlerFunc, scopes ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		stor, err := session.Start(nil, w, r)
 
@@ -27,10 +31,14 @@ func ClientMiddleware(name, secret, authUrl string, handle http.HandlerFunc) htt
 		tkn, ok := stor.Get("access.token")
 
 		if !ok {
-			log.Println(err)
-			w.Header().Add("Location", authUrl + "/consent")
-			w.WriteHeader(http.StatusFound)
-			return
+			tkn, err = FetchToken(clnt, authUrl, name, secret, scopes...)
+
+			if err != nil {
+				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write(nil)
+				return
+			}
 		}
 
 		claims, err := Exchange(tkn.(string), name, secret, authUrl+"/info")
@@ -84,6 +92,44 @@ func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) h
 		context.WithValue(r.Context(), "claims", claims)
 		handle(w, r)
 	}
+}
+
+func FetchToken(clnt *http.Client, authUrl, clientId, secret string, scopes ...string) (string, error) {
+	tknReq := models.TokenReq{
+		UserToken: make(tokens.Claims),
+		Scopes:    scopes,
+	}
+	obj, err := json.Marshal(tknReq)
+
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, authUrl+"/token", bytes.NewBuffer(obj))
+	req.SetBasicAuth(clientId, secret)
+
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := clnt.Do(req)
+
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%v", resp.StatusCode)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if len(body) == 0 {
+		return "", errors.New("no response")
+	}
+
+	return string(body), nil
 }
 
 func Exchange(token, name, secret, inspectUrl string) (tokens.Claimer, error) {

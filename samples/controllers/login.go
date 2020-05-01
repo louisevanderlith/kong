@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"encoding/json"
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/server"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -12,9 +15,51 @@ func HandleLoginGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	clnt := r.FormValue("client")
-	usrname := r.FormValue("username")
-	pass := r.FormValue("password")
-	server.Author.Authorize(clnt, usrname, pass)
+	obj := prime.LoginRequest{}
+	decoder := json.NewDecoder(r.Body)
+
+	err := decoder.Decode(&obj)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(nil)
+		return
+	}
+
+	ut, err := server.Author.Authorize(obj.Client, obj.Username, obj.Password)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(nil)
+		return
+	}
+
+	session, err := server.Author.Cookies.Get(r, "sess-store")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tkn, err := ut.Encode(&server.Author.SignCert.PublicKey)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(nil)
+		return
+	}
+
+	session.Values["user.token"] = tkn
+
+	err = session.Save(r, w)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(nil)
+		return
+	}
+
+	http.Redirect(w, r, "/consent", http.StatusFound)
 }
