@@ -5,7 +5,7 @@ import (
 	"github.com/louisevanderlith/husk"
 )
 
-type User interface {
+type Userer interface {
 	GetName() string
 	GetEmail() string
 	IsVerified() bool
@@ -13,7 +13,7 @@ type User interface {
 	ProvideClaim(claim string) (string, error)
 }
 
-type user struct {
+type User struct {
 	Name     string `hsk:"size(75)"`
 	Verified bool   `hsk:"default(false)"`
 	Email    string `hsk:"size(128)"`
@@ -21,37 +21,37 @@ type user struct {
 	Contacts Contacts
 }
 
-func NewUser(name, email, password string, verified bool, contacts Contacts) User {
-	return user{
-		Name: name,
-		Email: email,
+func NewUser(name, email, password string, verified bool, contacts Contacts) Userer {
+	return User{
+		Name:     name,
+		Email:    email,
 		Password: password,
 		Verified: verified,
 		Contacts: contacts,
 	}
 }
 
-func (u user) GetName() string {
+func (u User) GetName() string {
 	return u.Name
 }
 
-func (u user) GetEmail() string {
+func (u User) GetEmail() string {
 	return u.Email
 }
 
-func (u user) IsVerified() bool {
+func (u User) IsVerified() bool {
 	return u.Verified
 }
 
-func (u user) Valid() (bool, error) {
+func (u User) Valid() (bool, error) {
 	return husk.ValidateStruct(&u)
 }
 
-func (u user) VerifyPassword(password string) bool {
+func (u User) VerifyPassword(password string) bool {
 	return u.Password == password
 }
 
-func (u user) ProvideClaim(claim string) (string, error) {
+func (u User) ProvideClaim(claim string) (string, error) {
 	switch claim {
 	case "name":
 		return u.Name, nil

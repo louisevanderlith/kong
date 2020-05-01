@@ -50,8 +50,8 @@ func NewFakePS() fakeProfileStore {
 					Name:   "viewr",
 					Secret: "secret",
 					AllowedResources: []string{
-						"api.view.profile",
-						"api.view.user"},
+						"api.profile.view",
+						"api.user.view"},
 				},
 			},
 			Endpoints: map[string]string{

@@ -17,7 +17,7 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		w.Write(nil)
 		return
 	}
-
+	
 	dec := json.NewDecoder(r.Body)
 	req := models.TokenReq{}
 	err := dec.Decode(&req)
@@ -29,15 +29,13 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tkn, err := server.Author.RequestToken(clnt, pass, req.UserToken, req.Scope)
+	tkn, err := server.Author.RequestToken(clnt, pass, req.UserToken, req.Scopes...)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(nil)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(tkn)
+	w.Write([]byte(tkn))
 }
