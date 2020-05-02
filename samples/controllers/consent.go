@@ -3,7 +3,6 @@ package controllers
 import (
 	"fmt"
 	"github.com/louisevanderlith/kong/samples/server"
-	"github.com/louisevanderlith/kong/signing"
 	"io"
 	"log"
 	"net/http"
@@ -11,31 +10,20 @@ import (
 )
 
 func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
-	session, err := server.Author.Cookies.Get(r, "sess-store")
+	brrl, err := server.Author.Barrel(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	ut, ok := session.Values["user.token"]
-
-	if !ok {
+	if !brrl.HasUser() {
 		w.Header().Set("Location", "/login")
 		w.WriteHeader(http.StatusFound)
 		return
 	}
 
-	clms, err := signing.DecodeToken(ut.(string), server.Author.SignCert)
-
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
-		return
-	}
-
-	_, username := clms.GetUserinfo()
-	_, clnt, err := server.Author.GetProfileClient(clms.GetId())
+	_, username := brrl.GetUserinfo()
+	_, clnt, err := server.Author.GetProfileClient(brrl.GetId())
 
 	if err != nil {
 		log.Println(err)
@@ -67,10 +55,12 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 		concern.WriteString("</ul></li>")
 	}
 
-	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", username, clms.GetId(), concern.String())
+	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", username, brrl.GetId(), concern.String())
 	io.WriteString(w, tmpl)
 }
 
 func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 	//server.Author.Consent()
+
+	//callback ? token
 }

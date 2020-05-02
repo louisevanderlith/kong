@@ -55,7 +55,7 @@ func (r Resource) AssignNeeds(prof Profile, userKey string, usr Userer) (tokens.
 				if clm == "key" {
 					val = userKey
 				} else {
-					val, err = prof.ProvideClaim(clm)
+					val, err = usr.ProvideClaim(clm)
 				}
 			} else {
 				return nil, errors.New("user login required")

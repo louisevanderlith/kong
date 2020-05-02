@@ -3,6 +3,7 @@ package fakes
 import (
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/tokens"
 )
 
 type fakeResourceStore struct {
@@ -12,34 +13,16 @@ type fakeResourceStore struct {
 func NewFakeRS() fakeResourceStore {
 	rsrc := []prime.Resource{
 		{
-			Name:        "theme.assets.download",
-			DisplayName: "Download Theme assets",
-			Secret:      "secret",
-			Needs:       []string{"profile.name"},
-		},
-		{
-			Name:        "theme.assets.view",
-			DisplayName: "View Theme assets",
-			Secret:      "secret",
-			Needs:       []string{"profile.name"},
-		},
-		{
-			Name:        "artifact.download",
-			DisplayName: "Download Artifacts",
-			Secret:      "secret",
-			Needs:       nil,
-		},
-		{
 			Name:        "api.profile.view",
 			DisplayName: "Displays the profile's information",
 			Secret:      "secret",
-			Needs:       []string{"profile.name"},
+			Needs:       []string{tokens.KongProfile, tokens.KongClient},
 		},
 		{
 			Name:        "api.user.view",
 			DisplayName: "Displays the user's information",
 			Secret:      "secret",
-			Needs:       []string{"user.name", "user.key"},
+			Needs:       []string{tokens.KongProfile, tokens.KongClient, tokens.UserName, tokens.UserKey},
 		},
 	}
 	return fakeResourceStore{rsrc}

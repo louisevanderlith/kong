@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 type Claimer interface {
 	GetKong() Claimer
+	GetProfile() string
 	GetClient() string
 	GetId() string
 	HasUser() bool
@@ -27,22 +29,75 @@ type Claimer interface {
 	Encode(pubkey *rsa.PublicKey) (string, error)
 }
 
+//Common claims
+const (
+	KongID      = "kong.id"
+	KongClient  = "kong.client"
+	KongProfile = "kong.profile"
+	KongIssued  = "kong.iat"
+	KongExpired = "kong.exp"
+	UserKey     = "user.key"
+	UserName    = "user.name"
+)
+
 type Claims map[string]string
 
+func StartClaims(id string) (Claimer, error) {
+	result := make(Claims)
+	idparts := strings.Split(id, ".")
+
+	if len(idparts) != 2 {
+		return nil, errors.New("id is invalid")
+	}
+
+	result.AddClaim(KongID, id)
+	result.AddClaim(KongProfile, idparts[0])
+	result.AddClaim(KongClient, idparts[1])
+
+	return result, nil
+}
+
+func OpenClaims(raw string, prvKey *rsa.PrivateKey) (Claimer, error) {
+	tkn, err := hex.DecodeString(raw)
+
+	if err != nil {
+		return nil, err
+	}
+
+	dcryptd, err := rsa.DecryptOAEP(sha512.New(), rand.Reader, prvKey, tkn, []byte("access"))
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(Claims)
+	err = json.Unmarshal(dcryptd, &result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if result.IsExpired() {
+		return nil, errors.New("token expired")
+	}
+
+	return result, nil
+}
+
 func (c Claims) GetClient() string {
-	return c["kong.client"]
+	return c[KongClient]
 }
 
 func (c Claims) HasUser() bool {
-	return c.HasClaim("user.key")
+	return c.HasClaim(UserKey)
 }
 
 func (c Claims) GetUserinfo() (string, string) {
-	return c.GetClaim("user.key"), c.GetClaim("user.name")
+	return c.GetClaim(UserKey), c.GetClaim(UserName)
 }
 
 func (c Claims) IsExpired() bool {
-	val, ok := c["kong.exp"]
+	val, ok := c[KongExpired]
 
 	if !ok {
 		return true
@@ -120,7 +175,11 @@ func (c Claims) Encode(pubkey *rsa.PublicKey) (string, error) {
 }
 
 func (c Claims) GetId() string {
-	return c["kong.id"]
+	return c[KongID]
+}
+
+func (c Claims) GetProfile() string {
+	return c[KongProfile]
 }
 
 func (c Claims) GetKong() Claimer {
