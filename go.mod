@@ -9,4 +9,5 @@ require (
 	github.com/gorilla/sessions v1.2.0
 	github.com/louisevanderlith/husk v1.4.0
 	github.com/quasoft/memstore v0.0.0-20191010062613-2bce066d2b0b
+	golang.org/x/crypto v0.0.0-20200429183012-4b2356b1ed79
 )

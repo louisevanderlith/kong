@@ -5,10 +5,9 @@ import (
 	"errors"
 	"github.com/gorilla/sessions"
 	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/signing"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
-	"strings"
+	"net/http"
 	"time"
 )
 
@@ -20,8 +19,28 @@ type Authority struct {
 	Cookies   sessions.Store
 }
 
-func (a Authority) Authorize(clientId, username, password string) (tokens.Claimer, error) {
-	prof, clnt, err := a.GetProfileClient(clientId)
+//AuthenticateUser returns the User's Key after successful authentication
+func (a Authority) AuthenticateUser(username, password string) (tokens.Claimer, error) {
+	id, usr := a.Users.GetUserByName(username)
+
+	if usr == nil {
+		return nil, errors.New("invalid user")
+	}
+
+	if !usr.VerifyPassword(password) {
+		return nil, errors.New("invalid user")
+	}
+
+	result := make(tokens.Claims)
+
+	result.AddClaim(tokens.UserName, usr.GetName())
+	result.AddClaim(tokens.UserKey, id)
+
+	return result, nil
+}
+
+func (a Authority) Authorize(id, username, password string) (tokens.Claimer, error) {
+	result, err := tokens.StartClaims(id)
 
 	if err != nil {
 		return nil, err
@@ -37,14 +56,10 @@ func (a Authority) Authorize(clientId, username, password string) (tokens.Claime
 		return nil, errors.New("invalid user")
 	}
 
-	result := make(tokens.Claims)
-	result.AddClaim("kong.id", clientId)
-	result.AddClaim("kong.profile", prof.Title)
-	result.AddClaim("kong.client", clnt.Name)
-	result.AddClaim("kong.iat", time.Now().Format("2006-01-02T15:04:05"))
-	result.AddClaim("kong.exp", time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
-	result.AddClaim("user.name", usr.GetName())
-	result.AddClaim("user.key", id)
+	result.AddClaim(tokens.KongIssued, time.Now().Format("2006-01-02T15:04:05"))
+	result.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
+	result.AddClaim(tokens.UserName, usr.GetName())
+	result.AddClaim(tokens.UserKey, id)
 
 	return result, nil
 }
@@ -54,7 +69,6 @@ func (a Authority) Consent(ut tokens.Claimer, claims ...string) (tokens.Claimer,
 		return nil, errors.New("no consented claims")
 	}
 
-	//ut.Claims = claims
 	return ut, nil
 }
 
@@ -64,24 +78,26 @@ func (a Authority) Consent(ut tokens.Claimer, claims ...string) (tokens.Claimer,
 //ut: pre-authenticated user token
 //scopes: resources used by the requesting page.
 func (a Authority) RequestToken(id, secret string, ut tokens.Claimer, resources ...string) (string, error) {
-	prof, clnt, err := a.GetProfileClient(id)
+	result, err := tokens.StartClaims(id)
 
 	if err != nil {
 		return "", err
 	}
 
-	if clnt.Secret != secret {
+	prof, clnt, err := a.GetProfileClient(result)
+
+	if err != nil {
+		return "", err
+	}
+
+	if !clnt.VerifySecret(secret) {
 		return "", errors.New("client unauthorized")
 	}
 
-	fullClaims := make(tokens.Claims)
-	fullClaims.AddClaim("kong.id", id)
-	fullClaims.AddClaim("kong.profile", prof.Title)
-	fullClaims.AddClaim("kong.client", clnt.Name)
-	fullClaims.AddClaim("kong.iat", time.Now().Format("2006-01-02T15:04:05"))
-	fullClaims.AddClaim("kong.exp", time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
+	result.AddClaim(tokens.KongIssued, time.Now().Format("2006-01-02T15:04:05"))
+	result.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
 
-	_, k := ut.GetUserinfo()
+	k, _ := ut.GetUserinfo()
 	usr := a.Users.GetUser(k)
 
 	for _, rsrc := range resources {
@@ -101,41 +117,28 @@ func (a Authority) RequestToken(id, secret string, ut tokens.Claimer, resources 
 			return "", err
 		}
 
-		fullClaims.AddClaims(vals)
+		result.AddClaims(vals)
 	}
 
-	return fullClaims.Encode(&a.SignCert.PublicKey)
+	return result.Encode(&a.SignCert.PublicKey)
 }
 
-func (a Authority) Info(token, clientId, secret string) (tokens.Claimer, error) {
-	_, clnt, err := a.GetProfileClient(clientId)
+func (a Authority) Info(token, secret string) (tokens.Claimer, error) {
+	clms, err := tokens.OpenClaims(token, a.SignCert)
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, clnt, err := a.GetProfileClient(clms)
 
 	if err != nil {
 		return nil, err
 	}
 
 	if !clnt.VerifySecret(secret) {
-		return nil, errors.New("invalid secret")
+		return nil, errors.New("invalid client")
 	}
-
-	accs, err := signing.DecodeToken(token, a.SignCert)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if accs.IsExpired() {
-		return nil, errors.New("token expired")
-	}
-
-	clms := accs.GetKong()
-
-	if accs.HasUser() {
-		nme := "user.name"
-		clms.AddClaim(nme, accs.GetClaim(nme))
-	}
-
-	clms.AddClaim("kong.client", accs.GetClient())
 
 	return clms, nil
 }
@@ -151,39 +154,45 @@ func (a Authority) Inspect(token, resource, secret string) (tokens.Claimer, erro
 		return nil, errors.New("invalid secret")
 	}
 
-	accs, err := signing.DecodeToken(token, a.SignCert)
+	clms, err := tokens.OpenClaims(token, a.SignCert)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if accs.IsExpired() {
-		return nil, errors.New("token expired")
-	}
-
-	return resrc.ExtractNeeds(accs)
+	return resrc.ExtractNeeds(clms)
 }
 
-func (a Authority) GetProfileClient(id string) (prime.Profile, prime.Client, error) {
-	idparts := strings.Split(id, ".")
-
-	if len(idparts) != 2 {
-		return prime.Profile{}, prime.Client{}, errors.New("id is invalid")
-	}
-
-	prof, err := a.Profiles.GetProfile(idparts[0])
+func (a Authority) GetProfileClient(clms tokens.Claimer) (prime.Profile, prime.Client, error) {
+	prof, err := a.Profiles.GetProfile(clms.GetProfile())
 
 	if err != nil {
 		return prime.Profile{}, prime.Client{}, err
 	}
 
-	clnt, err := prof.GetClient(idparts[1])
+	clnt, err := prof.GetClient(clms.GetClient())
 
 	if err != nil {
 		return prime.Profile{}, prime.Client{}, err
 	}
 
 	return prof, clnt, nil
+}
+
+//Barrel returns claims that are currently rolling
+func (a Authority) Barrel(r *http.Request) (tokens.Claimer, error) {
+	session, err := a.Cookies.Get(r, "sess-store")
+	if err != nil {
+		return nil, err
+	}
+
+	res, ok := session.Values["barrel"]
+
+	if !ok {
+		return nil, errors.New("no barrel")
+	}
+
+	return res.(tokens.Claimer), nil
 }
 
 /*

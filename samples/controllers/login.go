@@ -10,8 +10,14 @@ import (
 )
 
 func HandleLoginGET(w http.ResponseWriter, r *http.Request) {
+	/*session, err := server.Author.Cookies.Get(r, "sess-store")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}*/
+
 	//tmpl := fmt.Sprintf("<html><body>%v</body></html>", claims)
-	io.WriteString(w, "<html><body><h1>Please login</h1></body></html>")
+	io.WriteString(w, "<html><body><h1>Please login</h1><form></form></body></html>")
 }
 
 func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +33,7 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ut, err := server.Author.Authorize(obj.Client, obj.Username, obj.Password)
+	id, err := server.Author.AuthenticateUser(obj.Username, obj.Password)
 
 	if err != nil {
 		log.Println(err)
@@ -42,16 +48,7 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tkn, err := ut.Encode(&server.Author.SignCert.PublicKey)
-
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
-		return
-	}
-
-	session.Values["user.token"] = tkn
+	session.Values["user.id"] = id
 
 	err = session.Save(r, w)
 	if err != nil {
@@ -61,5 +58,5 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/consent", http.StatusFound)
+	http.Redirect(w, r, "/consent?client=", http.StatusFound)
 }
