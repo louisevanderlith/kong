@@ -27,26 +27,6 @@ func NewFakePS() fakeProfileStore {
 			ImageKey: husk.CrazyKey(),
 			Clients: []prime.Client{
 				{
-					Name:   "www",
-					Secret: "secret",
-					AllowedResources: []string{
-						"profile",
-						"comms.messages.create",
-						"blog.articles.view",
-						"blog.articles.search",
-						"comment.messages.search",
-						"theme.assets.download",
-						"theme.assets.view",
-						"artifact.download"},
-				},
-				{
-					Name:   "admin",
-					Secret: "secret",
-					AllowedResources: []string{
-						"profile",
-						"user"},
-				},
-				{
 					Name:   "viewr",
 					Secret: "secret",
 					AllowedResources: []string{
@@ -55,11 +35,7 @@ func NewFakePS() fakeProfileStore {
 				},
 			},
 			Endpoints: map[string]string{
-				"comms":    "https://comms.kong",
-				"blog":     "https://blog.kong",
-				"theme":    "https://theme.kong",
-				"artifact": "https://artifact.kong",
-				"comment":  "https://comment.kong",
+				"api": "https://api.kong",
 			},
 			Codes: map[string]string{
 				"gtag": "000000-00",

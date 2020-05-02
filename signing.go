@@ -1,4 +1,4 @@
-package signing
+package kong
 
 import (
 	"crypto/rand"
@@ -17,7 +17,7 @@ const (
 )
 
 // Initialize creates a new Public/Private key pair for signing authentication requests, if no other keys exist
-func Initialize(path string, saveCerts bool) (*rsa.PrivateKey, error) {
+func InitializeCert(path string, saveCerts bool) (*rsa.PrivateKey, error) {
 	key, err := loadPrivateKey(path, saveCerts)
 
 	if err != nil {
@@ -119,4 +119,54 @@ func generateKeyPair(path string, saveCerts bool) (*rsa.PrivateKey, error) {
 	}
 
 	return privKey, nil
+}
+
+func savePEMKey(filename string, blck *pem.Block) error {
+	outFile, err := os.Create(filename)
+
+	if err != nil {
+		return err
+	}
+
+	defer outFile.Close()
+
+	err = pem.Encode(outFile, blck)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func savePrivatePEMKey(filename string, key *rsa.PrivateKey) error {
+	blckBytes, err := x509.MarshalPKCS8PrivateKey(key)
+
+	if err != nil {
+		return err
+	}
+
+	blck := &pem.Block{
+		Type:    "PRIVATE KEY",
+		Headers: nil,
+		Bytes:   blckBytes, //x509.MarshalPKCS1PrivateKey(key),
+	}
+
+	return savePEMKey(filename, blck)
+}
+
+func savePublicPEMKey(filename string, key *rsa.PublicKey) error {
+	bits, err := x509.MarshalPKIXPublicKey(key)
+
+	if err != nil {
+		return err
+	}
+
+	blck := &pem.Block{
+		Type:    "PUBLIC KEY",
+		Headers: nil,
+		Bytes:   bits,
+	}
+
+	return savePEMKey(filename, blck)
 }

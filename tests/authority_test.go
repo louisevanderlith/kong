@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/louisevanderlith/kong"
 	"github.com/louisevanderlith/kong/fakes"
-	"github.com/louisevanderlith/kong/signing"
 	"github.com/louisevanderlith/kong/tokens"
 	"log"
 	"testing"
@@ -13,7 +12,7 @@ import (
 var authr kong.Authority
 
 func init() {
-	signr, err := signing.Initialize("/", false)
+	signr, err := kong.InitializeCert("/", false)
 
 	if err != nil {
 		panic(err)
@@ -52,22 +51,22 @@ func TestAuthority_RequestToken_HasClient(t *testing.T) {
 		return
 	}
 
-	accs, err := authr.Inspect(string(tkn), rname, "secret")
+	accs, err := authr.Inspect(tkn, rname, "secret")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if accs.GetClaim("kong.client") != "viewr" {
+	if accs.GetClaim(tokens.KongClient) != "viewr" {
 		t.Error("incorrect client", accs)
 	}
 }
 
 //TestAuthority_RequestToken_ProfileInfo_HasAllClaims Tests that all claims for a scope is included
 func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
-	rname := "theme.assets.download"
-	tkn, err := authr.RequestToken("kong.www", "secret", make(tokens.Claims), rname)
+	rname := "api.profile.view"
+	tkn, err := authr.RequestToken("kong.viewr", "secret", make(tokens.Claims), rname)
 
 	if err != nil {
 		t.Error(err)
@@ -75,10 +74,10 @@ func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 	}
 
 	answr := map[string]string{
-		"profile.name": "",
+		tokens.KongProfile: "",
 	}
 
-	accs, err := authr.Inspect(string(tkn), rname, "secret")
+	accs, err := authr.Inspect(tkn, rname, "secret")
 
 	if err != nil {
 		t.Error(err)
@@ -102,8 +101,8 @@ func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 }
 
 func TestAuthority_RequestToken_UserInfo_InvalidUser(t *testing.T) {
-	scp := "user"
-	_, err := authr.RequestToken("kong.admin", "secret", make(tokens.Claims), scp)
+	scp := "api.user.view"
+	_, err := authr.RequestToken("kong.viewr", "secret", make(tokens.Claims), scp)
 
 	if err == nil {
 		t.Error("expected 'invalid user token'")
@@ -112,29 +111,42 @@ func TestAuthority_RequestToken_UserInfo_InvalidUser(t *testing.T) {
 }
 
 func TestAuthority_Authorize(t *testing.T) {
-	tkn, err := authr.Authorize("kong.admin", "user@fake.com", "user1pass")
+	tkn, err := authr.Authorize("kong.viewr", "user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if tkn.Key != "00" {
-		t.Error("invalid token")
+	if !tkn.HasUser() {
+		t.Error("token doesn't have user")
+		return
+	}
+
+	k, n := tkn.GetUserinfo()
+
+	if k != "00" {
+		t.Error("invalid user key", k)
+		return
+	}
+
+	if n != "User 1" {
+		t.Error("invalid user name", n)
 	}
 }
 
 func TestAuthority_RequestToken_UserInfo_ValidUser(t *testing.T) {
 	scp := "api.user.view"
-	utkn, err := authr.Authorize("kong.admin", "user@fake.com", "user1pass")
+	utkn, err := authr.AuthenticateUser("user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if utkn.Key != "00" {
-		t.Error("invalid token")
+	if !utkn.HasUser() {
+		t.Error("invalid token, no user")
+		return
 	}
 
 	tkn, err := authr.RequestToken("kong.viewr", "secret", utkn, scp)
@@ -144,7 +156,7 @@ func TestAuthority_RequestToken_UserInfo_ValidUser(t *testing.T) {
 		return
 	}
 
-	accs, err := authr.Inspect(string(tkn), "api.user.view", "secret")
+	accs, err := authr.Inspect(tkn, "api.user.view", "secret")
 
 	if err != nil {
 		t.Error(err)
@@ -152,8 +164,8 @@ func TestAuthority_RequestToken_UserInfo_ValidUser(t *testing.T) {
 	}
 
 	answr := map[string]string{
-		"user.name": "",
-		"user.key":  "",
+		tokens.UserKey:  "",
+		tokens.UserName: "",
 	}
 
 	rsrc, _ := authr.Resources.GetResource(scp)

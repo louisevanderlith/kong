@@ -8,14 +8,14 @@ import (
 
 func TestInspect_ResourceRequest(t *testing.T) {
 	toknObj := make(tokens.Claims)
-	toknObj.AddClaim("kong.client", "www")
-	toknObj.AddClaim("profile.name", "kong")
+	toknObj.AddClaim(tokens.KongClient, "viewr")
+	toknObj.AddClaim(tokens.KongProfile, "kong")
 
 	resrc := prime.Resource{
-		Name:        "theme.assets.download",
-		DisplayName: "Download assets from Theme",
+		Name:        "api.profile.view",
+		DisplayName: "Displays the profile's information",
 		Secret:      "secret",
-		Needs:       []string{"profile.name"},
+		Needs:       []string{tokens.KongProfile, tokens.KongClient},
 	}
 
 	info, err := resrc.ExtractNeeds(toknObj)
@@ -25,7 +25,7 @@ func TestInspect_ResourceRequest(t *testing.T) {
 		return
 	}
 
-	act := info.GetClaim("profile.name")
+	act := info.GetClaim(tokens.KongProfile)
 	exp := "kong"
 	if act != exp {
 		t.Errorf("found %s, expected '%s'", act, exp)

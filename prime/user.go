@@ -3,6 +3,7 @@ package prime
 import (
 	"errors"
 	"github.com/louisevanderlith/husk"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Userer interface {
@@ -17,11 +18,11 @@ type User struct {
 	Name     string `hsk:"size(75)"`
 	Verified bool   `hsk:"default(false)"`
 	Email    string `hsk:"size(128)"`
-	Password string `hsk:"min(6)"`
+	Password []byte `hsk:"min(6)"`
 	Contacts Contacts
 }
 
-func NewUser(name, email, password string, verified bool, contacts Contacts) Userer {
+func NewUser(name, email string, password []byte, verified bool, contacts Contacts) Userer {
 	return User{
 		Name:     name,
 		Email:    email,
@@ -48,7 +49,8 @@ func (u User) Valid() (bool, error) {
 }
 
 func (u User) VerifyPassword(password string) bool {
-	return u.Password == password
+	err := bcrypt.CompareHashAndPassword(u.Password, []byte(password))
+	return err == nil
 }
 
 func (u User) ProvideClaim(claim string) (string, error) {

@@ -6,14 +6,13 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/louisevanderlith/kong"
 	"github.com/louisevanderlith/kong/fakes"
-	"github.com/louisevanderlith/kong/signing"
 	"github.com/louisevanderlith/kong/tokens"
 )
 
 var Author kong.Authority
 
 func init() {
-	crt, err := signing.Initialize("/", false)
+	crt, err := kong.InitializeCert("/", false)
 
 	if err != nil {
 		panic(err)
