@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"encoding/json"
+	"github.com/louisevanderlith/kong/prime"
 	"log"
 	"net/http"
 
-	"github.com/louisevanderlith/kong/samples/models"
 	"github.com/louisevanderlith/kong/samples/server"
 )
 
@@ -19,7 +19,7 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	dec := json.NewDecoder(r.Body)
-	req := models.TokenReq{}
+	req := prime.TokenReq{}
 	err := dec.Decode(&req)
 
 	if err != nil {
