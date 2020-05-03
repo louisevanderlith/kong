@@ -9,7 +9,7 @@ import (
 )
 
 func HandleInfoPOST(w http.ResponseWriter, r *http.Request) {
-	clntId, pass, ok := r.BasicAuth()
+	_, pass, ok := r.BasicAuth()
 
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -28,7 +28,7 @@ func HandleInfoPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, err := server.Author.Info(req.AccessCode, clntId, pass)
+	claims, err := server.Author.Info(req.AccessCode, pass)
 
 	if err != nil {
 		log.Println(err)
@@ -48,4 +48,3 @@ func HandleInfoPOST(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(bits)
 }
-

@@ -19,6 +19,22 @@ type Authority struct {
 	Cookies   sessions.Store
 }
 
+func CreateAuthority(profiles stores.ProfileStore, users stores.UserStore, resources stores.ResourceStore, certpath string, sessstore sessions.Store) Authority {
+	signr, err := InitializeCert(certpath, len(certpath) > 0)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return Authority{
+		Profiles:  profiles,
+		Users:     users,
+		Resources: resources,
+		SignCert:  signr,
+		Cookies:   sessstore,
+	}
+}
+
 //AuthenticateUser returns the User's Key after successful authentication
 func (a Authority) AuthenticateUser(username, password string) (tokens.Claimer, error) {
 	id, usr := a.Users.GetUserByName(username)
@@ -96,6 +112,9 @@ func (a Authority) RequestToken(id, secret string, ut tokens.Claimer, resources 
 
 	result.AddClaim(tokens.KongIssued, time.Now().Format("2006-01-02T15:04:05"))
 	result.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
+
+	//Get Client needs from Profile
+	result.AddClaims(clnt.ExtractNeeds(prof))
 
 	k, _ := ut.GetUserinfo()
 	usr := a.Users.GetUser(k)

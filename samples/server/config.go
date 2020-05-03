@@ -12,29 +12,17 @@ import (
 var Author kong.Authority
 
 func init() {
-	crt, err := kong.InitializeCert("/", false)
 
-	if err != nil {
-		panic(err)
-	}
-
-	Author = kong.Authority{
-		Profiles:  fakes.NewFakePS(),
-		Users:     fakes.NewFakeUS(),
-		Resources: fakes.NewFakeRS(),
-	}
-
-	Author.SignCert = crt
-
-	authKeyOne := securecookie.GenerateRandomKey(64)
-	encryptionKeyOne := securecookie.GenerateRandomKey(32)
+	ps := fakes.NewFakePS()
+	us := fakes.NewFakeUS()
+	rs := fakes.NewFakeRS()
 	gob.Register(tokens.Claims{})
 	stor := sessions.NewCookieStore(
-		authKeyOne,
-		encryptionKeyOne,
+		securecookie.GenerateRandomKey(64),
+		securecookie.GenerateRandomKey(32),
 	)
 	stor.Options.Secure = true
 	stor.Options.HttpOnly = true
 
-	Author.Cookies = stor
+	Author = kong.CreateAuthority(ps, us, rs, "", stor)
 }

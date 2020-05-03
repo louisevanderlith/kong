@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/kong/tokens"
 )
 
 type Profile struct {
@@ -38,7 +39,7 @@ func (p Profile) ProvideClaim(claim string) (string, error) {
 		return p.Title, nil
 	case "logo":
 		return p.ImageKey.String(), nil
-	case "terms":
+	case tokens.KongTerms:
 		ts, err := json.Marshal(p.Terms)
 
 		if err != nil {
@@ -46,7 +47,7 @@ func (p Profile) ProvideClaim(claim string) (string, error) {
 		}
 
 		return string(ts), nil
-	case "codes":
+	case tokens.KongCodes:
 		cds, err := json.Marshal(p.Codes)
 
 		if err != nil {
@@ -54,7 +55,7 @@ func (p Profile) ProvideClaim(claim string) (string, error) {
 		}
 
 		return string(cds), nil
-	case "endpoints":
+	case tokens.KongEndpoints:
 		points, err := json.Marshal(p.Endpoints)
 
 		if err != nil {
