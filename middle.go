@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-session/session"
-	"github.com/louisevanderlith/kong/samples/models"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -95,7 +94,7 @@ func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) h
 }
 
 func FetchToken(clnt *http.Client, authUrl, clientId, secret string, scopes ...string) (string, error) {
-	tknReq := models.TokenReq{
+	tknReq := prime.TokenReq{
 		UserToken: make(tokens.Claims),
 		Scopes:    scopes,
 	}

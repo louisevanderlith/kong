@@ -26,18 +26,22 @@ type Claimer interface {
 	HasClaim(name string) bool
 	GetClaim(name string) string
 	GetAll() map[string]string
+	GetResourceURL(name string) (string, error)
 	Encode(pubkey *rsa.PublicKey) (string, error)
 }
 
 //Common claims
 const (
-	KongID      = "kong.id"
-	KongClient  = "kong.client"
-	KongProfile = "kong.profile"
-	KongIssued  = "kong.iat"
-	KongExpired = "kong.exp"
-	UserKey     = "user.key"
-	UserName    = "user.name"
+	KongID        = "kong.id"
+	KongClient    = "kong.client"
+	KongProfile   = "kong.profile"
+	KongTerms     = "kong.terms"
+	KongCodes     = "kong.codes"
+	KongEndpoints = "kong.endpoints"
+	KongIssued    = "kong.iat"
+	KongExpired   = "kong.exp"
+	UserKey       = "user.key"
+	UserName      = "user.name"
 )
 
 type Claims map[string]string
@@ -192,4 +196,28 @@ func (c Claims) GetKong() Claimer {
 	}
 
 	return result
+}
+
+func (c Claims) GetEndpoints() map[string]string {
+	val := c.GetClaim(KongEndpoints)
+	res := make(map[string]string)
+	err := json.Unmarshal([]byte(val), &res)
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return res
+}
+
+func (c Claims) GetResourceURL(name string) (string, error) {
+	ends := c.GetEndpoints()
+	url, ok := ends[name]
+
+	if !ok {
+		return "", fmt.Errorf("Endpoint %s not found in %v", name, ends)
+	}
+
+	return url, nil
 }

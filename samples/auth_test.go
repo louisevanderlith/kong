@@ -15,12 +15,11 @@ import (
 
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/controllers"
-	"github.com/louisevanderlith/kong/samples/models"
 	"github.com/louisevanderlith/kong/tokens"
 )
 
 func ObtainToken(srvr *httptest.Server, clientId, secret string, scopes ...string) (string, error) {
-	tknReq := models.TokenReq{
+	tknReq := prime.TokenReq{
 		UserToken: make(tokens.Claims),
 		Scopes:    scopes,
 	}
