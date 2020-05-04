@@ -1,18 +1,12 @@
 package fakes
 
 import (
-	"errors"
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/prime"
-	"strings"
 )
 
-type fakeProfileStore struct {
-	Profiles []prime.Profile
-}
-
-func NewFakePS() fakeProfileStore {
-	profs := []prime.Profile{
+func NewFakeProfiles() []prime.Profile {
+	return []prime.Profile{
 		{
 			Title:       "kong",
 			Description: "Rollings claims authenticator",
@@ -42,16 +36,4 @@ func NewFakePS() fakeProfileStore {
 			},
 		},
 	}
-
-	return fakeProfileStore{profs}
-}
-
-func (ps fakeProfileStore) GetProfile(id string) (prime.Profile, error) {
-	for _, v := range ps.Profiles {
-		if strings.ToLower(v.Title) == id {
-			return v, nil
-		}
-	}
-
-	return prime.Profile{}, errors.New("profile not found")
 }

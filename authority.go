@@ -12,14 +12,12 @@ import (
 )
 
 type Authority struct {
-	Profiles  stores.ProfileStore
-	Users     stores.UserStore
-	Resources stores.ResourceStore
-	SignCert  *rsa.PrivateKey
-	Cookies   sessions.Store
+	Store    stores.AuthStore
+	SignCert *rsa.PrivateKey
+	Cookies  sessions.Store
 }
 
-func CreateAuthority(profiles stores.ProfileStore, users stores.UserStore, resources stores.ResourceStore, certpath string, sessstore sessions.Store) Authority {
+func CreateAuthority(store stores.AuthStore, certpath string, sessstore sessions.Store) Authority {
 	signr, err := InitializeCert(certpath, len(certpath) > 0)
 
 	if err != nil {
@@ -27,17 +25,15 @@ func CreateAuthority(profiles stores.ProfileStore, users stores.UserStore, resou
 	}
 
 	return Authority{
-		Profiles:  profiles,
-		Users:     users,
-		Resources: resources,
-		SignCert:  signr,
-		Cookies:   sessstore,
+		Store:    store,
+		SignCert: signr,
+		Cookies:  sessstore,
 	}
 }
 
 //AuthenticateUser returns the User's Key after successful authentication
 func (a Authority) AuthenticateUser(username, password string) (tokens.Claimer, error) {
-	id, usr := a.Users.GetUserByName(username)
+	id, usr := a.Store.GetUserByName(username)
 
 	if usr == nil {
 		return nil, errors.New("invalid user")
@@ -62,7 +58,7 @@ func (a Authority) Authorize(id, username, password string) (tokens.Claimer, err
 		return nil, err
 	}
 
-	id, usr := a.Users.GetUserByName(username)
+	id, usr := a.Store.GetUserByName(username)
 
 	if usr == nil {
 		return nil, errors.New("invalid user")
@@ -117,14 +113,14 @@ func (a Authority) RequestToken(id, secret string, ut tokens.Claimer, resources 
 	result.AddClaims(clnt.ExtractNeeds(prof))
 
 	k, _ := ut.GetUserinfo()
-	usr := a.Users.GetUser(k)
+	usr := a.Store.GetUser(k)
 
 	for _, rsrc := range resources {
 		if !clnt.ResourceAllowed(rsrc) {
 			return "", errors.New("scope not allowed")
 		}
 
-		resrc, err := a.Resources.GetResource(rsrc)
+		resrc, err := a.Store.GetResource(rsrc)
 
 		if err != nil {
 			return "", err
@@ -163,7 +159,7 @@ func (a Authority) Info(token, secret string) (tokens.Claimer, error) {
 }
 
 func (a Authority) Inspect(token, resource, secret string) (tokens.Claimer, error) {
-	resrc, err := a.Resources.GetResource(resource)
+	resrc, err := a.Store.GetResource(resource)
 
 	if err != nil {
 		return nil, err
@@ -183,7 +179,7 @@ func (a Authority) Inspect(token, resource, secret string) (tokens.Claimer, erro
 }
 
 func (a Authority) GetProfileClient(clms tokens.Claimer) (prime.Profile, prime.Client, error) {
-	prof, err := a.Profiles.GetProfile(clms.GetProfile())
+	prof, err := a.Store.GetProfile(clms.GetProfile())
 
 	if err != nil {
 		return prime.Profile{}, prime.Client{}, err
