@@ -11,24 +11,27 @@ type Userer interface {
 	GetEmail() string
 	IsVerified() bool
 	VerifyPassword(password string) bool
+	ResourceAllowed(name string) bool
 	ProvideClaim(claim string) (string, error)
 }
 
 type User struct {
-	Name     string `hsk:"size(75)"`
-	Verified bool   `hsk:"default(false)"`
-	Email    string `hsk:"size(128)"`
-	Password []byte `hsk:"min(6)"`
-	Contacts Contacts
+	Name      string `hsk:"size(75)"`
+	Verified  bool   `hsk:"default(false)"`
+	Email     string `hsk:"size(128)"`
+	Password  []byte `hsk:"min(6)"`
+	Contacts  Contacts
+	Resources []string
 }
 
-func NewUser(name, email string, password []byte, verified bool, contacts Contacts) Userer {
+func NewUser(name, email string, password []byte, verified bool, contacts Contacts, resources []string) Userer {
 	return User{
-		Name:     name,
-		Email:    email,
-		Password: password,
-		Verified: verified,
-		Contacts: contacts,
+		Name:      name,
+		Email:     email,
+		Password:  password,
+		Verified:  verified,
+		Contacts:  contacts,
+		Resources: resources,
 	}
 }
 
@@ -64,4 +67,13 @@ func (u User) ProvideClaim(claim string) (string, error) {
 	}
 
 	return "", errors.New("no claim found")
+}
+
+func (u User) ResourceAllowed(name string) bool {
+	for _, v := range u.Resources {
+		if v == name {
+			return true
+		}
+	}
+	return false
 }

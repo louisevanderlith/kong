@@ -12,6 +12,9 @@ func NewFakeUsers() map[string]prime.Userer {
 	}
 
 	return map[string]prime.Userer{
-		"00": prime.NewUser("User 1", "user@fake.com", pss, true, []prime.Contact{}),
+		"00": prime.NewUser("User 1", "user@fake.com", pss, true, []prime.Contact{}, []string{
+			"api.user.view",
+			"api.profile.view",
+		}),
 	}
 }
