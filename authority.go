@@ -126,6 +126,10 @@ func (a Authority) RequestToken(id, secret string, ut tokens.Claimer, resources 
 			return "", err
 		}
 
+		if usr != nil && !usr.ResourceAllowed(rsrc) {
+			return "", errors.New("scope not allowed")
+		}
+
 		vals, err := resrc.AssignNeeds(prof, k, usr)
 
 		if err != nil {
