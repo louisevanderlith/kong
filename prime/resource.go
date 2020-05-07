@@ -2,6 +2,7 @@ package prime
 
 import (
 	"errors"
+	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
 )
@@ -11,6 +12,10 @@ type Resource struct {
 	DisplayName string
 	Secret      string
 	Needs       []string
+}
+
+func (r Resource) Valid() (bool, error) {
+	return husk.ValidateStruct(&r)
 }
 
 func (r Resource) VerifySecret(secret string) bool {
