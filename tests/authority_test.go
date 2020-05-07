@@ -19,10 +19,8 @@ func init() {
 	}
 
 	authr = kong.Authority{
-		Profiles:  fakes.NewFakePS(),
-		Users:     fakes.NewFakeUS(),
-		Resources: fakes.NewFakeRS(),
-		SignCert:  signr,
+		Store:    fakes.NewFakeStore(),
+		SignCert: signr,
 	}
 }
 
@@ -84,7 +82,7 @@ func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 		return
 	}
 
-	rsrc, _ := authr.Resources.GetResource(rname)
+	rsrc, _ := authr.Store.GetResource(rname)
 
 	for _, v := range rsrc.Needs {
 		if !accs.HasClaim(v) {
@@ -168,7 +166,7 @@ func TestAuthority_RequestToken_UserInfo_ValidUser(t *testing.T) {
 		tokens.UserName: "",
 	}
 
-	rsrc, _ := authr.Resources.GetResource(scp)
+	rsrc, _ := authr.Store.GetResource(scp)
 	log.Println(accs.GetAll())
 	for _, v := range rsrc.Needs {
 		if !accs.HasClaim(v) {

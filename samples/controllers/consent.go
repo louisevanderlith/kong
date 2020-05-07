@@ -35,7 +35,7 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 	concern := strings.Builder{}
 
 	for _, v := range clnt.AllowedResources {
-		rsrc, err := server.Author.Resources.GetResource(v)
+		rsrc, err := server.Author.Store.GetResource(v)
 
 		if err != nil {
 			log.Println(err)
@@ -54,7 +54,7 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 
 		concern.WriteString("</ul></li>")
 	}
-	
+
 	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", username, brrl.GetId(), concern.String())
 	io.WriteString(w, tmpl)
 }

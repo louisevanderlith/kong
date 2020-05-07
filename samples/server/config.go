@@ -13,9 +13,6 @@ var Author kong.Authority
 
 func init() {
 
-	ps := fakes.NewFakePS()
-	us := fakes.NewFakeUS()
-	rs := fakes.NewFakeRS()
 	gob.Register(tokens.Claims{})
 	stor := sessions.NewCookieStore(
 		securecookie.GenerateRandomKey(64),
@@ -24,5 +21,5 @@ func init() {
 	stor.Options.Secure = true
 	stor.Options.HttpOnly = true
 
-	Author = kong.CreateAuthority(ps, us, rs, "", stor)
+	Author = kong.CreateAuthority(fakes.NewFakeStore(), "", stor)
 }
