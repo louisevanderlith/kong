@@ -55,3 +55,25 @@ func (s fakeStore) GetResource(name string) (prime.Resource, error) {
 
 	return prime.Resource{}, fmt.Errorf("scope %s not found", name)
 }
+
+func (s fakeStore) GetProfileClient(id string) (prime.Profile, prime.Client, error) {
+	idparts := strings.Split(id, ".")
+
+	if len(idparts) != 2 {
+		return prime.Profile{}, prime.Client{}, errors.New("id is invalid")
+	}
+
+	 prof, err := s.GetProfile(idparts[0])
+
+	if err != nil {
+		return prime.Profile{}, prime.Client{}, err
+	}
+
+	clnt, err := prof.GetClient(idparts[1])
+
+	if err != nil {
+		return prime.Profile{}, prime.Client{}, err
+	}
+
+	return prof, clnt, nil
+}

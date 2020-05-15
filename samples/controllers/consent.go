@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/server"
+	"github.com/louisevanderlith/kong/tokens"
 	"io"
 	"log"
 	"net/http"
@@ -60,7 +63,36 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
-	//server.Author.Consent()
+	obj := prime.ConsentRequest{}
+	decoder := json.NewDecoder(r.Body)
 
-	//callback ? token
+	err := decoder.Decode(&obj)
+
+	if err != nil {
+		log.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	session, err := server.Author.Cookies.Get(r, "sess-store")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	clms, err := server.Author.Consent(session.Values["user.id"].(tokens.Claims), obj.Claims...)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	prof, clnt, err := server.Author.GetProfileClient(clms)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("https://%s.%s/callback", strings.ToLower(clnt.Name), prof.Domain), http.StatusFound)
 }
