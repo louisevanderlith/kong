@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/louisevanderlith/kong/samples/server"
 	"io/ioutil"
 	"log"
 	http "net/http"
@@ -132,7 +133,7 @@ func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (map[stri
 	return clms, nil
 }
 
-func ObtainUserLogin(srvr *httptest.Server, clientId, username, password string) (string, error) {
+func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, password string) (string, error) {
 	insReq := prime.LoginRequest{
 		Client:   clientId,
 		Username: username,
@@ -145,6 +146,7 @@ func ObtainUserLogin(srvr *httptest.Server, clientId, username, password string)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, srvr.URL+"/login", bytes.NewBuffer(obj))
+	req.Header.Set("Authorization", "Bearer "+logintoken)
 
 	if err != nil {
 		return "", err
@@ -181,7 +183,7 @@ func ObtainUserLogin(srvr *httptest.Server, clientId, username, password string)
 }
 
 func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes())
+	ts := httptest.NewServer(GetAuthRoutes(server.Author))
 	defer ts.Close()
 	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 	if err != nil {
@@ -191,7 +193,7 @@ func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
 }
 
 func TestHandleTokenPOST_UserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes())
+	ts := httptest.NewServer(GetAuthRoutes(server.Author))
 	defer ts.Close()
 	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.user.view")
 	if err == nil {
@@ -206,7 +208,7 @@ func TestHandleTokenPOST_UserRequired(t *testing.T) {
 }
 
 func TestHandleInspectPOST(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes())
+	ts := httptest.NewServer(GetAuthRoutes(server.Author))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
@@ -229,7 +231,7 @@ func TestHandleInspectPOST(t *testing.T) {
 }
 
 func TestHandleInfoPOST(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes())
+	ts := httptest.NewServer(GetAuthRoutes(server.Author))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
@@ -278,7 +280,7 @@ func TestHandleConsentGET_NotAuthenticated(t *testing.T) {
 func TestHandleLoginGET(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	rr := httptest.NewRecorder()
-	GetAuthRoutes().ServeHTTP(rr, req)
+	GetAuthRoutes(server.Author).ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Fatal(rr.Code, rr.Body.String())
@@ -289,10 +291,17 @@ func TestHandleLoginGET(t *testing.T) {
 }
 
 func TestHandleLoginPOST(t *testing.T) {
-	ts := httptest.NewTLSServer(GetAuthRoutes())
+	ts := httptest.NewTLSServer(GetAuthRoutes(server.Author))
 	defer ts.Close()
 
-	ut, err := ObtainUserLogin(ts, "kong.viewr", "user@fake.com", "user1pass")
+	tkn, err := ObtainToken(ts, "kong.auth", "secret", "kong.login.apply", "kong.consent.apply")
+
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	ut, err := ObtainUserLogin(ts, tkn, "kong.viewr", "user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error(err)

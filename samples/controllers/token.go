@@ -17,7 +17,7 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		w.Write(nil)
 		return
 	}
-	
+
 	dec := json.NewDecoder(r.Body)
 	req := prime.TokenReq{}
 	err := dec.Decode(&req)
@@ -36,6 +36,13 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	stkn, err := server.Author.Sign(tkn)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(tkn))
+	w.Write([]byte(stkn))
 }

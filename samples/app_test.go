@@ -2,6 +2,7 @@ package samples
 
 import (
 	"github.com/louisevanderlith/kong"
+	"github.com/louisevanderlith/kong/samples/server"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestHandleIndexGET_MustLandOnLogin(t *testing.T) {
-	ts := httptest.NewTLSServer(GetAuthRoutes())
+	ts := httptest.NewTLSServer(GetAuthRoutes(server.Author))
 	defer ts.Close()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

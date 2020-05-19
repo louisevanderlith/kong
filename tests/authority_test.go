@@ -9,19 +9,16 @@ import (
 	"testing"
 )
 
-var authr kong.Authority
+var authr kong.Author
 
 func init() {
-	signr, err := kong.InitializeCert("/", false)
+	a, err := kong.CreateAuthority(fakes.NewFakeStore(), "/", nil)
 
 	if err != nil {
 		panic(err)
 	}
 
-	authr = kong.Authority{
-		Store:    fakes.NewFakeStore(),
-		SignCert: signr,
-	}
+	authr = a
 }
 
 //TestAuthority_RequestToken_NoClient Tests that an error is returned when no client is found

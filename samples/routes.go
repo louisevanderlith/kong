@@ -7,14 +7,14 @@ import (
 	"net/http"
 )
 
-func GetAuthRoutes() http.Handler {
+func GetAuthRoutes(authr kong.Author) http.Handler {
 	r := mux.NewRouter()
 	//Auth
 	r.HandleFunc("/token", controllers.HandleTokenPOST).Methods(http.MethodPost)
-	r.HandleFunc("/login", controllers.HandleLoginPOST).Methods(http.MethodPost)
-	r.HandleFunc("/login", controllers.HandleLoginGET).Methods(http.MethodGet)
-	r.HandleFunc("/consent", controllers.HandleConsentPOST).Methods(http.MethodPost)
-	r.HandleFunc("/consent", controllers.HandleConsentGET).Methods(http.MethodGet)
+	r.HandleFunc("/login", kong.InternalMiddleware(authr, "kong.login.apply", "secret", controllers.HandleLoginPOST)).Methods(http.MethodPost)
+	//r.HandleFunc("/login", controllers.HandleLoginGET).Methods(http.MethodGet)
+	r.HandleFunc("/consent", kong.InternalMiddleware(authr, "kong.consent.apply", "secret", controllers.HandleConsentPOST)).Methods(http.MethodPost)
+	//r.HandleFunc("/consent", controllers.HandleConsentGET).Methods(http.MethodGet)
 	r.HandleFunc("/inspect", controllers.HandleInspectPOST).Methods(http.MethodPost)
 	r.HandleFunc("/info", controllers.HandleInfoPOST).Methods(http.MethodPost)
 

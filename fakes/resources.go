@@ -23,5 +23,17 @@ func NewFakeResources() []prime.Resource {
 			Secret:      "secret",
 			Needs:       []string{tokens.KongProfile, tokens.KongClient, tokens.UserName, tokens.UserKey},
 		},
+		{
+			Name:        "kong.consent.apply",
+			DisplayName: "Allows applications to update consent",
+			Secret:      "secret",
+			Needs:       []string{tokens.KongProfile, tokens.KongClient},
+		},
+		{
+			Name:        "kong.login.apply",
+			DisplayName: "Allows applications to authenticate users",
+			Secret:      "secret",
+			Needs:       []string{tokens.KongProfile, tokens.KongClient},
+		},
 	}
 }

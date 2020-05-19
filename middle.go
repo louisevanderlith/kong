@@ -16,6 +16,38 @@ import (
 	"github.com/louisevanderlith/kong/tokens"
 )
 
+func InternalMiddleware(authr Author, name, secret string, handle http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		token, err := GetBearerToken(r)
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write(nil)
+			return
+		}
+
+		clms, err := authr.Inspect(token, name, secret)
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write(nil)
+			return
+		}
+
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write(nil)
+			return
+		}
+
+		context.WithValue(r.Context(), "claims", clms)
+		handle(w, r)
+	}
+}
+
 func ClientMiddleware(clnt *http.Client, name, secret, authUrl string, handle http.HandlerFunc, scopes ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		stor, err := session.Start(nil, w, r)
@@ -56,24 +88,10 @@ func ClientMiddleware(clnt *http.Client, name, secret, authUrl string, handle ht
 
 func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		reqToken := r.Header.Get("Authorization")
+		token, err := GetBearerToken(r)
 
-		if len(reqToken) == 0 {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
-			return
-		}
-
-		prefix := "Bearer "
-
-		if !strings.HasPrefix(reqToken, prefix) {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
-			return
-		}
-		token := reqToken[len(prefix):]
-
-		if len(token) == 0 {
+		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write(nil)
 			return
@@ -91,6 +109,28 @@ func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) h
 		context.WithValue(r.Context(), "claims", claims)
 		handle(w, r)
 	}
+}
+
+func GetBearerToken(r *http.Request) (string, error) {
+	reqToken := r.Header.Get("Authorization")
+
+	if len(reqToken) == 0 {
+		return "", errors.New("header length invalid")
+	}
+
+	prefix := "Bearer "
+
+	if !strings.HasPrefix(reqToken, prefix) {
+		return "", errors.New("bearer not found")
+	}
+
+	token := reqToken[len(prefix):]
+
+	if len(token) == 0 {
+		return "", errors.New("token length invalid")
+	}
+
+	return token, nil
 }
 
 func FetchToken(clnt *http.Client, authUrl, clientId, secret string, scopes ...string) (string, error) {

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/server"
-	"io"
 	"log"
 	"net/http"
 )
 
+/*
 func HandleLoginGET(w http.ResponseWriter, r *http.Request) {
 	/*session, err := server.Author.Cookies.Get(r, "sess-store")
 	if err != nil {
@@ -16,9 +16,9 @@ func HandleLoginGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}*/
 
-	//tmpl := fmt.Sprintf("<html><body>%v</body></html>", claims)
-	io.WriteString(w, "<html><body><h1>Please login</h1><form></form></body></html>")
-}
+//tmpl := fmt.Sprintf("<html><body>%v</body></html>", claims)
+//io.WriteString(w, "<html><body><h1>Please login</h1><form></form></body></html>")
+//}*/
 
 func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 	obj := prime.LoginRequest{}
@@ -33,7 +33,7 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := server.Author.AuthenticateUser(obj.Username, obj.Password)
+	tkn, err := server.Author.Login(obj.Client, obj.Username, obj.Password)
 
 	if err != nil {
 		log.Println(err)
@@ -42,7 +42,18 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := server.Author.Cookies.Get(r, "sess-store")
+	stkn, err := server.Author.Sign(tkn)
+
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(nil)
+		return
+	}
+
+	w.Write([]byte(stkn))
+
+	/*session, err := server.Author.Cookies.Get(r, "sess-store")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -58,5 +69,5 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/consent?client=", http.StatusFound)
+	http.Redirect(w, r, "/consent?client=", http.StatusFound)*/
 }

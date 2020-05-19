@@ -9,7 +9,7 @@ import (
 	"github.com/louisevanderlith/kong/tokens"
 )
 
-var Author kong.Authority
+var Author kong.Author
 
 func init() {
 
@@ -21,5 +21,11 @@ func init() {
 	stor.Options.Secure = true
 	stor.Options.HttpOnly = true
 
-	Author = kong.CreateAuthority(fakes.NewFakeStore(), "", stor)
+	a, err := kong.CreateAuthority(fakes.NewFakeStore(), "", stor)
+
+	if err != nil {
+		panic(err)
+	}
+
+	Author = a
 }

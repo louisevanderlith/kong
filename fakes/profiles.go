@@ -27,6 +27,13 @@ func NewFakeProfiles() []prime.Profile {
 						"api.profile.view",
 						"api.user.view"},
 				},
+				{
+					Name:   "auth",
+					Secret: "secret",
+					AllowedResources: []string{
+						"kong.consent.apply",
+						"kong.login.apply"},
+				},
 			},
 			Endpoints: map[string]string{
 				"api": "https://api.kong",

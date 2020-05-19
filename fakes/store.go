@@ -23,13 +23,16 @@ func NewFakeStore() stores.AuthStore {
 }
 
 func (s fakeStore) GetProfile(id string) (prime.Profile, error) {
+	if len(id) == 0 {
+		return prime.Profile{}, errors.New("id is empty")
+	}
 	for _, v := range s.Profiles {
 		if strings.ToLower(v.Title) == id {
 			return v, nil
 		}
 	}
 
-	return prime.Profile{}, errors.New("profile not found")
+	return prime.Profile{}, fmt.Errorf("profile '%s' not found", id)
 }
 
 func (s fakeStore) GetUser(id string) prime.Userer {
@@ -63,7 +66,7 @@ func (s fakeStore) GetProfileClient(id string) (prime.Profile, prime.Client, err
 		return prime.Profile{}, prime.Client{}, errors.New("id is invalid")
 	}
 
-	 prof, err := s.GetProfile(idparts[0])
+	prof, err := s.GetProfile(idparts[0])
 
 	if err != nil {
 		return prime.Profile{}, prime.Client{}, err

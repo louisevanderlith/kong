@@ -2,16 +2,13 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/server"
-	"github.com/louisevanderlith/kong/tokens"
-	"io"
 	"log"
 	"net/http"
-	"strings"
 )
 
+/*
 func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 	brrl, err := server.Author.Barrel(r)
 	if err != nil {
@@ -60,8 +57,9 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 
 	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", username, brrl.GetId(), concern.String())
 	io.WriteString(w, tmpl)
-}
+}*/
 
+//Returns a signed token with consented claims
 func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 	obj := prime.ConsentRequest{}
 	decoder := json.NewDecoder(r.Body)
@@ -74,25 +72,19 @@ func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := server.Author.Cookies.Get(r, "sess-store")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	clms, err := server.Author.Consent(session.Values["user.id"].(tokens.Claims), obj.Claims...)
+	clms, err := server.Author.Consent(obj.User, obj.Claims...)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	prof, clnt, err := server.Author.GetProfileClient(clms)
+	cb, err := server.Author.GetCallback(clms)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("https://%s.%s/callback", strings.ToLower(clnt.Name), prof.Domain), http.StatusFound)
+	http.Redirect(w, r, cb, http.StatusFound)
 }
