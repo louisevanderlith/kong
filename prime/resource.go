@@ -34,7 +34,7 @@ func (r Resource) ExtractNeeds(claims tokens.Claimer) (tokens.Claimer, error) {
 	return result, nil
 }
 
-func (r Resource) AssignNeeds(prof Profile, userKey string, usr Userer) (tokens.Claimer, error) {
+func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer, usr Userer) (tokens.Claimer, error) {
 	result := make(tokens.Claims)
 
 	for _, v := range r.Needs {
@@ -57,9 +57,9 @@ func (r Resource) AssignNeeds(prof Profile, userKey string, usr Userer) (tokens.
 					return nil, errors.New("user is not verified")
 				}
 
-				if clm == "key" {
-					val = userKey
-				} else {
+				if clm == tokens.UserKey {
+					val = usrtkn.GetClaim(tokens.UserKey)
+				} else if usrtkn.HasClaim(clm) {
 					val, err = usr.ProvideClaim(clm)
 				}
 			} else {

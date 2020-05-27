@@ -17,7 +17,7 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	handle := kong.ResourceMiddleware("api.profile.view", "secret", "https://localhost:000", controllers.HandleProfileGET)
+	handle := kong.ResourceMiddleware("api.profile.view", "secret", "https://localhost:000", handlers.HandleProfileGET)
 	handle(rr, req)
 
 	if rr.Code != http.StatusOK {
