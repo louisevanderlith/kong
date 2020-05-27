@@ -1,16 +1,15 @@
-package controllers
+package secure
 
 import (
 	"encoding/json"
+	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"log"
 	"net/http"
-
-	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/samples/server"
 )
 
-func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
-	scp, pass, ok := r.BasicAuth()
+func HandleInfoPOST(w http.ResponseWriter, r *http.Request) {
+	_, pass, ok := r.BasicAuth()
 
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -29,7 +28,7 @@ func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, err := server.Author.Inspect(req.AccessCode, scp, pass)
+	claims, err := secure.Author.Info(req.AccessCode, pass)
 
 	if err != nil {
 		log.Println(err)

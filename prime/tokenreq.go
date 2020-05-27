@@ -1,10 +1,6 @@
 package prime
 
-import (
-	"github.com/louisevanderlith/kong/tokens"
-)
-
 type TokenReq struct {
-	UserToken tokens.Claims
+	UserToken string
 	Scopes    []string
 }

@@ -1,10 +1,10 @@
-package controllers
+package viewr
 
 import (
-	"testing"
+	"net/http"
 )
 
-func HandleCallbackGET(t *testing.T) {
+func HandleCallbackGET(w http.ResponseWriter, r *http.Request) {
 	/*c.Request.ParseForm()
 	state := c.Query("state")
 

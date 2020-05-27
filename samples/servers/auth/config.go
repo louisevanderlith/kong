@@ -1,25 +1,26 @@
-package server
+package auth
 
 import (
-	"encoding/gob"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/louisevanderlith/kong"
-	"github.com/louisevanderlith/kong/fakes"
-	"github.com/louisevanderlith/kong/tokens"
+	"net/http"
 )
 
-var Author kong.Authority
+var (
+	SessionStore sessions.Store
+	Security kong.Securer
+)
 
-func init() {
-
-	gob.Register(tokens.Claims{})
+func SetupAuthServer(clnt *http.Client, authURL, tokn string) {
 	stor := sessions.NewCookieStore(
 		securecookie.GenerateRandomKey(64),
 		securecookie.GenerateRandomKey(32),
 	)
+
 	stor.Options.Secure = true
 	stor.Options.HttpOnly = true
 
-	Author = kong.CreateAuthority(fakes.NewFakeStore(), "", stor)
+	SessionStore = stor
+	Security = kong.NewSecurity(clnt, authURL, tokn)
 }

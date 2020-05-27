@@ -1,4 +1,4 @@
-package controllers
+package api
 
 import (
 	"encoding/json"
@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-//Example of a scope that doesn't require user login
-func HandleProfileGET(w http.ResponseWriter, r *http.Request) {
+//Example of a scope that requires user login
+func HandleUserGET(w http.ResponseWriter, r *http.Request) {
 	claims := r.Context().Value("claims")
 
 	if claims == nil {

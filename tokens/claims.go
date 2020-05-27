@@ -42,6 +42,7 @@ const (
 	KongExpired   = "kong.exp"
 	UserKey       = "user.key"
 	UserName      = "user.name"
+	UserConsent = "user.consent"
 )
 
 type Claims map[string]string

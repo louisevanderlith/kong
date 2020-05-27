@@ -1,20 +1,22 @@
-package tests
+package secure
 
 import (
+	"encoding/gob"
 	"github.com/louisevanderlith/kong"
 	"github.com/louisevanderlith/kong/fakes"
+	"github.com/louisevanderlith/kong/tokens"
 )
 
-
-//Test files are created for every interface method
-var authr kong.Author
+var Author kong.Author
 
 func init() {
+	gob.Register(tokens.Claims{})
+
 	a, err := kong.CreateAuthority(fakes.NewFakeStore(), "")
 
 	if err != nil {
 		panic(err)
 	}
 
-	authr = a
+	Author = a
 }
