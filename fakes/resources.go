@@ -35,5 +35,11 @@ func NewFakeResources() []prime.Resource {
 			Secret:      "secret",
 			Needs:       []string{tokens.KongProfile, tokens.KongClient},
 		},
+		{
+			Name:        "kong.client.query",
+			DisplayName: "Allows applications to get a client's needs",
+			Secret:      "secret",
+			Needs:       []string{tokens.KongProfile, tokens.KongClient},
+		},
 	}
 }

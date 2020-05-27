@@ -48,7 +48,7 @@ func InternalMiddleware(authr Author, name, secret string, handle http.HandlerFu
 	}
 }
 
-func ClientMiddleware(clnt *http.Client, name, secret, authUrl string, handle http.HandlerFunc, scopes ...string) http.HandlerFunc {
+func ClientMiddleware(clnt *http.Client, name, secret, secureUrl, authUrl string, handle http.HandlerFunc, scopes ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		stor, err := session.Start(nil, w, r)
 
@@ -62,17 +62,24 @@ func ClientMiddleware(clnt *http.Client, name, secret, authUrl string, handle ht
 		tkn, ok := stor.Get("access.token")
 
 		if !ok {
-			tkn, err = FetchToken(clnt, authUrl, name, secret, scopes...)
+			tkn, err = FetchToken(clnt, secureUrl, name, secret, scopes...)
 
 			if err != nil {
 				log.Println(err)
+				if err.Error() == "user login required" {
+					cbUrl := fmt.Sprintf("https://%s/callback", r.Host)
+					consntUrl := fmt.Sprintf("%s/consent?client=%s&callback=%s", authUrl, name, cbUrl)
+					http.Redirect(w, r, consntUrl, http.StatusTemporaryRedirect)
+					return
+				}
+
 				w.WriteHeader(http.StatusInternalServerError)
 				w.Write(nil)
 				return
 			}
 		}
 
-		claims, err := Exchange(tkn.(string), name, secret, authUrl+"/info")
+		claims, err := Exchange(tkn.(string), name, secret, secureUrl+"/info")
 
 		if err != nil {
 			log.Println(err)
@@ -135,7 +142,7 @@ func GetBearerToken(r *http.Request) (string, error) {
 
 func FetchToken(clnt *http.Client, authUrl, clientId, secret string, scopes ...string) (string, error) {
 	tknReq := prime.TokenReq{
-		UserToken: make(tokens.Claims),
+		UserToken: "",
 		Scopes:    scopes,
 	}
 	obj, err := json.Marshal(tknReq)

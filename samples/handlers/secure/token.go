@@ -1,12 +1,11 @@
-package controllers
+package secure
 
 import (
 	"encoding/json"
 	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"log"
 	"net/http"
-
-	"github.com/louisevanderlith/kong/samples/server"
 )
 
 func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
@@ -29,14 +28,14 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tkn, err := server.Author.RequestToken(clnt, pass, req.UserToken, req.Scopes...)
+	tkn, err := secure.Author.RequestToken(clnt, pass, req.UserToken, req.Scopes...)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	stkn, err := server.Author.Sign(tkn)
+	stkn, err := secure.Author.Sign(tkn)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
