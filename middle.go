@@ -79,7 +79,7 @@ func ClientMiddleware(clnt *http.Client, name, secret, secureUrl, authUrl string
 			}
 		}
 
-		claims, err := Exchange(tkn.(string), name, secret, secureUrl+"/info")
+		claims, err := Exchange(http.DefaultClient, tkn.(string), name, secret, secureUrl+"/info")
 
 		if err != nil {
 			log.Println(err)
@@ -104,7 +104,7 @@ func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) h
 			return
 		}
 
-		claims, err := Exchange(token, name, secret, authUrl+"/inspect")
+		claims, err := Exchange(http.DefaultClient, token, name, secret, authUrl+"/inspect")
 
 		if err != nil {
 			log.Println(err)
@@ -178,7 +178,7 @@ func FetchToken(clnt *http.Client, authUrl, clientId, secret string, scopes ...s
 	return string(body), nil
 }
 
-func Exchange(token, name, secret, inspectUrl string) (tokens.Claimer, error) {
+func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens.Claimer, error) {
 	insReq := prime.InspectReq{AccessCode: token}
 	obj, err := json.Marshal(insReq)
 	req, err := http.NewRequest(http.MethodPost, inspectUrl, bytes.NewBuffer(obj))
@@ -188,10 +188,16 @@ func Exchange(token, name, secret, inspectUrl string) (tokens.Claimer, error) {
 		return nil, err
 	}
 
-	defer req.Body.Close()
+	resp, err := clnt.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
 
 	var clms tokens.Claims
-	dec := json.NewDecoder(req.Body)
+	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&clms)
 
 	if err != nil {
