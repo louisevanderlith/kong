@@ -1,6 +1,7 @@
 package prime
 
 import (
+	"encoding/json"
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
@@ -51,27 +52,34 @@ func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 		}
 	}
 
-	for _, r := range c.AllowedResources {
-		parts := strings.Split(r, ".")
+	if len(c.AllowedResources) > 0 {
+		ends := make(map[string]string)
+		for _, r := range c.AllowedResources {
+			parts := strings.Split(r, ".")
 
-		if len(parts) < 2 {
-			continue
+			if len(parts) < 2 {
+				continue
+			}
+
+			api := parts[0]
+			if api == "kong" {
+				continue
+			}
+
+			v, ok := p.Endpoints[api]
+
+			if ok {
+				ends[api] = v
+			}
 		}
 
-		api := parts[0]
-		if api == "kong" {
-			continue
+		jends, err := json.Marshal(ends)
+
+		if err != nil {
+			return nil
 		}
 
-		if result.HasClaim(api) {
-			continue
-		}
-
-		v, ok := p.Endpoints[api]
-
-		if ok {
-			result.AddClaim(api, v)
-		}
+		result.AddClaim(tokens.KongEndpoints, string(jends))
 	}
 
 	return result
