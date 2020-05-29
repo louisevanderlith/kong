@@ -26,7 +26,7 @@ func GetAuthRoutes() http.Handler {
 //GetSecureRoutes returns a router for the Authorization Server
 func GetSecureRoutes(authr kong.Author) http.Handler {
 	r := mux.NewRouter()
-	//Auth
+
 	r.HandleFunc("/token", secure.HandleTokenPOST).Methods(http.MethodPost)
 
 	r.HandleFunc("/login", kong.InternalMiddleware(authr, "kong.login.apply", "secret", secure.HandleLoginPOST)).Methods(http.MethodPost)
