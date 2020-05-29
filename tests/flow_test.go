@@ -22,7 +22,7 @@ import (
 func TestFlow_User(t *testing.T) {
 	appId := "kong.viewr"
 	// Try to obtain token, should fail since we're requesting a user claim
-	_, err := authr.RequestToken(appId, "secret", make(tokens.Claims), "api.user.view")
+	_, err := authr.RequestToken(appId, "secret", "", "api.user.view")
 
 	if err == nil {
 		t.Error("unexpected success, user should be required")
@@ -30,7 +30,14 @@ func TestFlow_User(t *testing.T) {
 	}
 
 	// Obtain Partial login Token
-	partial, err := authr.Login(appId, "user@fake.com", "user1pass")
+	partClms, err := authr.Login(appId, "user@fake.com", "user1pass")
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	partial, err := authr.Sign(partClms)
 
 	if err != nil {
 		t.Error(err)
@@ -38,7 +45,14 @@ func TestFlow_User(t *testing.T) {
 	}
 
 	// Apply Consent to Partial token
-	ut, err := authr.Consent(partial, tokens.KongProfile, tokens.KongClient, tokens.UserName, tokens.UserKey)
+	usrClms, err := authr.Consent(partial, tokens.KongProfile, tokens.KongClient, tokens.UserName, tokens.UserKey)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	ut, err := authr.Sign(usrClms)
 
 	if err != nil {
 		t.Error(err)
@@ -59,7 +73,7 @@ func TestFlow_User(t *testing.T) {
 
 	act := tkn.GetClaim(tokens.UserName)
 	exp := "User 1"
-	if  act != exp {
+	if act != exp {
 		t.Errorf("incorrect claim; want %s, got %s", exp, act)
 		return
 	}
