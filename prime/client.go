@@ -3,6 +3,7 @@ package prime
 import (
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
+	"strings"
 )
 
 type Client struct {
@@ -51,10 +52,25 @@ func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 	}
 
 	for _, r := range c.AllowedResources {
-		v, ok := p.Endpoints[r]
+		parts := strings.Split(r, ".")
+
+		if len(parts) < 2 {
+			continue
+		}
+
+		api := parts[0]
+		if api == "kong" {
+			continue
+		}
+
+		if result.HasClaim(api) {
+			continue
+		}
+
+		v, ok := p.Endpoints[api]
 
 		if ok {
-			result.AddClaim(r, v)
+			result.AddClaim(api, v)
 		}
 	}
 
