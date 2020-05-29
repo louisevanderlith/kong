@@ -46,15 +46,15 @@ func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 		v, err := p.ProvideClaim(tokens.KongCodes)
 
 		if err != nil {
-			result.AddClaim(tokens.KongTerms, v)
+			result.AddClaim(tokens.KongCodes, v)
 		}
 	}
 
-	for _, v := range c.AllowedResources {
-		v, ok := p.Endpoints[v]
+	for _, r := range c.AllowedResources {
+		v, ok := p.Endpoints[r]
 
 		if ok {
-			result.AddClaim(tokens.KongTerms, v)
+			result.AddClaim(r, v)
 		}
 	}
 
