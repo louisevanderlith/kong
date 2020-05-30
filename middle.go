@@ -43,7 +43,9 @@ func InternalMiddleware(authr Author, name, secret string, handle http.HandlerFu
 			return
 		}
 
-		context.WithValue(r.Context(), "claims", clms)
+		idn := context.WithValue(r.Context(), "claims", clms)
+
+		r = r.WithContext(idn)
 		handle(w, r)
 	}
 }
@@ -88,7 +90,9 @@ func ClientMiddleware(clnt *http.Client, name, secret, secureUrl, authUrl string
 			return
 		}
 
-		context.WithValue(r.Context(), "claims", claims)
+		idn := context.WithValue(r.Context(), "claims", claims)
+
+		r = r.WithContext(idn)
 		handle(w, r)
 	}
 }
@@ -113,7 +117,9 @@ func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) h
 			return
 		}
 
-		context.WithValue(r.Context(), "claims", claims)
+		idn := context.WithValue(r.Context(), "claims", claims)
+
+		r = r.WithContext(idn)
 		handle(w, r)
 	}
 }
@@ -140,7 +146,7 @@ func GetBearerToken(r *http.Request) (string, error) {
 	return token, nil
 }
 
-func FetchToken(clnt *http.Client, authUrl, clientId, secret string, scopes ...string) (string, error) {
+func FetchToken(clnt *http.Client, secureUrl, clientId, secret string, scopes ...string) (string, error) {
 	tknReq := prime.TokenReq{
 		UserToken: "",
 		Scopes:    scopes,
@@ -151,7 +157,7 @@ func FetchToken(clnt *http.Client, authUrl, clientId, secret string, scopes ...s
 		return "", err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, authUrl+"/token", bytes.NewBuffer(obj))
+	req, err := http.NewRequest(http.MethodPost, secureUrl+"/token", bytes.NewBuffer(obj))
 	req.SetBasicAuth(clientId, secret)
 
 	if err != nil {

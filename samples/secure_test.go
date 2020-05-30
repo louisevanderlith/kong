@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/samples/server"
+	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"github.com/louisevanderlith/kong/tokens"
 	"io/ioutil"
 	"net/http"
@@ -17,10 +17,9 @@ import (
 
 // Secure is the API for Authentication
 
-
 func ObtainToken(srvr *httptest.Server, clientId, secret string, scopes ...string) (string, error) {
 	tknReq := prime.TokenReq{
-		UserToken: make(tokens.Claims),
+		UserToken: "",
 		Scopes:    scopes,
 	}
 	obj, err := json.Marshal(tknReq)
@@ -132,9 +131,8 @@ func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (map[stri
 	return clms, nil
 }
 
-
 func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes(servers.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
 	defer ts.Close()
 	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 	if err != nil {
@@ -144,7 +142,7 @@ func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
 }
 
 func TestHandleTokenPOST_UserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes(servers.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
 	defer ts.Close()
 	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.user.view")
 	if err == nil {
@@ -159,7 +157,7 @@ func TestHandleTokenPOST_UserRequired(t *testing.T) {
 }
 
 func TestHandleInspectPOST(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes(servers.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
@@ -182,7 +180,7 @@ func TestHandleInspectPOST(t *testing.T) {
 }
 
 func TestHandleInfoPOST(t *testing.T) {
-	ts := httptest.NewServer(GetAuthRoutes(servers.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
