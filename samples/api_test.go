@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/louisevanderlith/kong"
-	"github.com/louisevanderlith/kong/samples/controllers"
 )
 
 func TestResource_Middleware_SetContext(t *testing.T) {
