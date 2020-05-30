@@ -27,6 +27,8 @@ type Claimer interface {
 	GetClaim(name string) string
 	GetAll() map[string]string
 	GetResourceURL(name string) (string, error)
+	GetCode(name string) (string, error)
+	GetTerm(name string) (string, error)
 }
 
 //Common claims
@@ -37,6 +39,7 @@ const (
 	KongTerms     = "kong.terms"
 	KongCodes     = "kong.codes"
 	KongEndpoints = "kong.endpoints"
+	KongLogo      = "kong.logo"
 	KongIssued    = "kong.iat"
 	KongExpired   = "kong.exp"
 	UserKey       = "user.key"
@@ -180,8 +183,8 @@ func (c Claims) GetKong() Claimer {
 	return result
 }
 
-func (c Claims) GetEndpoints() map[string]string {
-	val := c.GetClaim(KongEndpoints)
+func (c Claims) getObject(claim string) map[string]string {
+	val := c.GetClaim(claim)
 	res := make(map[string]string)
 	err := json.Unmarshal([]byte(val), &res)
 
@@ -194,11 +197,33 @@ func (c Claims) GetEndpoints() map[string]string {
 }
 
 func (c Claims) GetResourceURL(name string) (string, error) {
-	ends := c.GetEndpoints()
+	ends := c.getObject(KongEndpoints)
 	url, ok := ends[name]
 
 	if !ok {
-		return "", fmt.Errorf("Endpoint %s not found in %v", name, ends)
+		return "", fmt.Errorf("endpoint %s not found in %v", name, ends)
+	}
+
+	return url, nil
+}
+
+func (c Claims) GetCode(name string) (string, error) {
+	codes := c.getObject(KongCodes)
+	url, ok := codes[name]
+
+	if !ok {
+		return "", fmt.Errorf("code %s not found in %v", name, codes)
+	}
+
+	return url, nil
+}
+
+func (c Claims) GetTerm(name string) (string, error) {
+	terms := c.getObject(KongTerms)
+	url, ok := terms[name]
+
+	if !ok {
+		return "", fmt.Errorf("terms %s not found in %v", name, terms)
 	}
 
 	return url, nil
