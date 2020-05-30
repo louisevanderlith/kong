@@ -1,7 +1,11 @@
 package kong
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha512"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/stores"
@@ -45,7 +49,22 @@ func (a authority) GetStore() stores.AuthStore {
 
 //Signs the claims
 func (a authority) Sign(token tokens.Claimer) (string, error) {
-	return token.Encode(&a.SignCert.PublicKey)
+
+	bits, err := json.Marshal(token)
+
+	if err != nil {
+		return "", err
+	}
+
+	ciphertxt, err := rsa.EncryptOAEP(sha512.New(), rand.Reader, &a.SignCert.PublicKey, bits, []byte("access"))
+
+	if err != nil {
+		return "", err
+	}
+
+	val := hex.EncodeToString(ciphertxt)
+
+	return val, nil
 }
 
 func (a authority) QueryClient(partial string) (prime.ClientQuery, error) {
