@@ -35,9 +35,9 @@ func (p Profile) GetClient(id string) (Client, error) {
 
 func (p Profile) ProvideClaim(claim string) (string, error) {
 	switch claim {
-	case "name":
+	case tokens.KongProfile:
 		return p.Title, nil
-	case "logo":
+	case tokens.KongLogo:
 		return p.ImageKey.String(), nil
 	case tokens.KongTerms:
 		ts, err := json.Marshal(p.Terms)
