@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/samples/server"
 	"log"
 	http "net/http"
 	"net/http/cookiejar"
