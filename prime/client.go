@@ -37,19 +37,13 @@ func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 	result := make(tokens.Claims)
 
 	if c.TermsEnabled {
-		v, err := p.ProvideClaim(tokens.KongTerms)
-
-		if err != nil {
-			result.AddClaim(tokens.KongTerms, v)
-		}
+		v, _ := p.ProvideClaim(tokens.KongTerms)
+		result.AddClaim(tokens.KongTerms, v)
 	}
 
 	if c.CodesEnabled {
-		v, err := p.ProvideClaim(tokens.KongCodes)
-
-		if err != nil {
-			result.AddClaim(tokens.KongCodes, v)
-		}
+		v, _ := p.ProvideClaim(tokens.KongCodes)
+		result.AddClaim(tokens.KongCodes, v)
 	}
 
 	if len(c.AllowedResources) > 0 {
