@@ -2,6 +2,6 @@ package tests
 
 import "testing"
 
-func TestAuthority_Info(t *testing.T){
+func TestAuthority_Info(t *testing.T) {
 
 }

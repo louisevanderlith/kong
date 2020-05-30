@@ -27,7 +27,6 @@ type Claimer interface {
 	GetClaim(name string) string
 	GetAll() map[string]string
 	GetResourceURL(name string) (string, error)
-	Encode(pubkey *rsa.PublicKey) (string, error)
 }
 
 //Common claims
@@ -42,7 +41,7 @@ const (
 	KongExpired   = "kong.exp"
 	UserKey       = "user.key"
 	UserName      = "user.name"
-	UserConsent = "user.consent"
+	UserConsent   = "user.consent"
 )
 
 type Claims map[string]string
@@ -159,24 +158,6 @@ func (c Claims) AddClaims(more Claimer) error {
 	}
 
 	return nil
-}
-
-func (c Claims) Encode(pubkey *rsa.PublicKey) (string, error) {
-	bits, err := json.Marshal(c)
-
-	if err != nil {
-		return "", err
-	}
-
-	ciphertxt, err := rsa.EncryptOAEP(sha512.New(), rand.Reader, pubkey, bits, []byte("access"))
-
-	if err != nil {
-		return "", err
-	}
-
-	val := hex.EncodeToString(ciphertxt)
-
-	return val, nil
 }
 
 func (c Claims) GetId() string {

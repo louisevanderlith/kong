@@ -57,5 +57,5 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/consent?client=%s&callback=%s",clnts[0], cbUrls[0]), http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("/consent?client=%s&callback=%s", clnts[0], cbUrls[0]), http.StatusFound)
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/louisevanderlith/kong/fakes"
 )
 
-
 //Test files are created for every interface method
 var authr kong.Author
 
