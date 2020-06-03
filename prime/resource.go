@@ -34,7 +34,7 @@ func (r Resource) ExtractNeeds(claims tokens.Claimer) (tokens.Claimer, error) {
 	return result, nil
 }
 
-func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer, usr Userer) (tokens.Claimer, error) {
+func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer) (tokens.Claimer, error) {
 	result := make(tokens.Claims)
 
 	for _, v := range r.Needs {
@@ -52,16 +52,12 @@ func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer, usr Userer) (
 		case "profile":
 			val, err = prof.ProvideClaim(clm)
 		case "user":
-			if usr != nil {
-				if !usr.IsVerified() {
-					return nil, errors.New("user is not verified")
+			if usrtkn != nil {
+				if usrtkn.IsExpired() {
+					return nil, errors.New("user token expired")
 				}
 
-				if clm == tokens.UserKey {
-					val = usrtkn.GetClaim(tokens.UserKey)
-				} else if usrtkn.HasClaim(clm) {
-					val, err = usr.ProvideClaim(clm)
-				}
+				val = usrtkn.GetClaim(clm)
 			} else {
 				return nil, errors.New("user login required")
 			}

@@ -34,7 +34,7 @@ func TestAuthority_Inspect_ResourceRequest(t *testing.T) {
 
 func TestAuthority_Inspect_ReturnsTokenClaims(t *testing.T) {
 	rname := "api.profile.view"
-	tkn, err := authr.RequestToken("kong.viewr", "secret", make(tokens.Claims), rname)
+	tkn, err := authr.RequestToken("kong.viewr", "secret", "", rname)
 
 	if err != nil {
 		t.Error(err)
