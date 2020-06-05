@@ -10,7 +10,7 @@ import (
 //TestAuthority_RequestToken_NoClient Tests that an error is returned when no client is found
 func TestAuthority_RequestToken_NoClient(t *testing.T) {
 	scp := "profile"
-	_, err := authr.RequestToken("kong.xxx", "secret", make(tokens.Claims), scp)
+	_, err := authr.RequestToken("kong.xxx", "secret", "", scp)
 
 	if err == nil {
 		t.Error("error expected")
@@ -25,7 +25,7 @@ func TestAuthority_RequestToken_NoClient(t *testing.T) {
 //TestAuthority_RequestToken_HasClient Tests that the correct client is returned
 func TestAuthority_RequestToken_HasClient(t *testing.T) {
 	rname := "api.profile.view"
-	tkn, err := authr.RequestToken("kong.viewr", "secret", make(tokens.Claims), rname)
+	tkn, err := authr.RequestToken("kong.viewr", "secret", "", rname)
 
 	if err != nil {
 		t.Error(err)
@@ -40,7 +40,7 @@ func TestAuthority_RequestToken_HasClient(t *testing.T) {
 //TestAuthority_RequestToken_ProfileInfo_HasAllClaims Tests that all claims for a scope is included
 func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 	rname := "api.profile.view"
-	tkn, err := authr.RequestToken("kong.viewr", "secret", make(tokens.Claims), rname)
+	tkn, err := authr.RequestToken("kong.viewr", "secret", "", rname)
 
 	if err != nil {
 		t.Error(err)
@@ -69,7 +69,7 @@ func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 
 func TestAuthority_RequestToken_UserInfo_InvalidUser(t *testing.T) {
 	scp := "api.user.view"
-	_, err := authr.RequestToken("kong.viewr", "secret", make(tokens.Claims), scp)
+	_, err := authr.RequestToken("kong.viewr", "secret", "", scp)
 
 	if err == nil {
 		t.Error("expected 'invalid user token'")
@@ -77,20 +77,27 @@ func TestAuthority_RequestToken_UserInfo_InvalidUser(t *testing.T) {
 	}
 }
 
-func TestAuthority_RequestToken_UserInfo_ValidUser(t *testing.T) {
+func TestAuthority_RequestToken_UserInfo_ValidUser_RequiresConsent(t *testing.T) {
 	scp := "api.user.view"
-	utkn, err := authr.Login("kong.viewr", "user@fake.com", "user1pass")
+	uclms, err := authr.Login("kong.viewr", "user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if !utkn.HasUser() {
+	if !uclms.HasUser() {
 		t.Error("invalid token, no user")
 		return
 	}
 
+	utkn, err := authr.Sign(uclms)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	log.Println(utkn)
 	tkn, err := authr.RequestToken("kong.viewr", "secret", utkn, scp)
 
 	if err != nil {

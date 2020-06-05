@@ -2,14 +2,11 @@ package kong
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha512"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
+	"io"
 	"time"
 )
 
@@ -26,21 +23,24 @@ type Author interface {
 }
 
 type authority struct {
-	Store    stores.AuthStore
-	SignCert *rsa.PrivateKey
+	Store stores.AuthStore
+	key   []byte //must be 32byte
 }
 
-func CreateAuthority(store stores.AuthStore, certpath string) (Author, error) {
-	signr, err := InitializeCert(certpath, len(certpath) > 0)
+func CreateAuthority(store stores.AuthStore) (Author, error) {
+	return authority{
+		Store: store,
+		key:   generateKey(32),
+	}, nil
+}
 
-	if err != nil {
-		return nil, err
+func generateKey(len int) []byte {
+	k := make([]byte, len)
+	if _, err := io.ReadFull(rand.Reader, k); err != nil {
+		return nil
 	}
 
-	return authority{
-		Store:    store,
-		SignCert: signr,
-	}, nil
+	return k
 }
 
 func (a authority) GetStore() stores.AuthStore {
@@ -48,27 +48,26 @@ func (a authority) GetStore() stores.AuthStore {
 }
 
 //Signs the claims
-func (a authority) Sign(token tokens.Claimer) (string, error) {
+func (a authority) Sign(claims tokens.Claimer) (string, error) {
+	return EncodeClaims(a.key, claims)
+}
 
-	bits, err := json.Marshal(token)
-
-	if err != nil {
-		return "", err
-	}
-
-	ciphertxt, err := rsa.EncryptOAEP(sha512.New(), rand.Reader, &a.SignCert.PublicKey, bits, []byte("access"))
+func (a authority) openClaims(token string) (tokens.Claimer, error) {
+	result, err := DecodeToken(a.key, token)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	val := hex.EncodeToString(ciphertxt)
+	if result.IsExpired() {
+		return nil, errors.New("token expired")
+	}
 
-	return val, nil
+	return result, nil
 }
 
 func (a authority) QueryClient(partial string) (prime.ClientQuery, error) {
-	clms, err := tokens.OpenClaims(partial, a.SignCert)
+	clms, err := a.openClaims(partial)
 
 	if err != nil {
 		return prime.ClientQuery{}, err
@@ -182,7 +181,7 @@ func (a authority) Consent(usrtkn string, claims ...string) (tokens.Claimer, err
 		return nil, errors.New("no consented claims")
 	}
 
-	ut, err := tokens.OpenClaims(usrtkn, a.SignCert)
+	ut, err := a.openClaims(usrtkn)
 
 	if err != nil {
 		return nil, err
@@ -244,7 +243,7 @@ func (a authority) RequestToken(id, secret, usrtkn string, resources ...string) 
 			return nil, errors.New("scope not allowed")
 		}
 
-		vals, err := resrc.AssignNeeds(prof, ut, usr)
+		vals, err := resrc.AssignNeeds(prof, ut)
 
 		if err != nil {
 			return nil, err
@@ -261,7 +260,7 @@ func (a authority) getUserToken(usrtkn string) (prime.Userer, tokens.Claimer, er
 	var ut tokens.Claimer
 
 	if len(usrtkn) > 0 {
-		ut, err := tokens.OpenClaims(usrtkn, a.SignCert)
+		ut, err := a.openClaims(usrtkn)
 
 		if err != nil {
 			return nil, nil, err
@@ -275,7 +274,7 @@ func (a authority) getUserToken(usrtkn string) (prime.Userer, tokens.Claimer, er
 
 //Info returns token information to the client
 func (a authority) Info(token, secret string) (tokens.Claimer, error) {
-	clms, err := tokens.OpenClaims(token, a.SignCert)
+	clms, err := a.openClaims(token)
 
 	if err != nil {
 		return nil, err
@@ -306,7 +305,7 @@ func (a authority) Inspect(token, resource, secret string) (tokens.Claimer, erro
 		return nil, errors.New("invalid secret")
 	}
 
-	clms, err := tokens.OpenClaims(token, a.SignCert)
+	clms, err := a.openClaims(token)
 
 	if err != nil {
 		return nil, err

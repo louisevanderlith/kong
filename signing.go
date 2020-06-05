@@ -1,13 +1,17 @@
 package kong
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"github.com/louisevanderlith/kong/tokens"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
@@ -15,6 +19,97 @@ const (
 	privateKeyFilename string = "sign_key.pem"
 	publicKeyFilename  string = "sign_pub.pem"
 )
+
+//EncodeClaims returns a base64 Encrypted token
+func EncodeClaims(key []byte, claims tokens.Claimer) (string, error) {
+	bits, err := json.Marshal(claims)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(key) != 32 {
+		return "", errors.New("requires 32bit key")
+	}
+
+	c, err := aes.NewCipher(key)
+
+	if err != nil {
+		return "", nil
+	}
+
+	gcm, err := cipher.NewGCM(c)
+
+	if err != nil {
+		return "", nil
+	}
+
+	nonce := generateKey(gcm.NonceSize())
+
+	smlBits := base64.URLEncoding.EncodeToString(bits)
+
+	ciphertext := gcm.Seal(nonce, nonce, []byte(smlBits), nil)
+
+	if err != nil {
+		return "", err
+	}
+
+	val := base64.URLEncoding.EncodeToString(ciphertext)
+
+	return val, nil
+}
+
+//DecodeToken return Claims from the base64 token
+func DecodeToken(key []byte, token string) (tokens.Claimer, error) {
+	if len(key) != 32 {
+		return nil, errors.New("requires 32bit key")
+	}
+
+	o, err := base64.URLEncoding.DecodeString(token)
+
+	if err != nil {
+		return nil, err
+	}
+
+	c, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(c)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceSize := gcm.NonceSize()
+
+	if len(token) < nonceSize {
+		return nil, errors.New("token size invalid")
+	}
+
+	nonce, ciphertext := o[:nonceSize], o[nonceSize:]
+
+	dcryptd, err := gcm.Open(nil, nonce, ciphertext, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	jobj, err := base64.URLEncoding.DecodeString(string(dcryptd))
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(tokens.Claims)
+	err = json.Unmarshal(jobj, &result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
 
 // Initialize creates a new Public/Private key pair for signing authentication requests, if no other keys exist
 func InitializeCert(path string, saveCerts bool) (*rsa.PrivateKey, error) {
@@ -36,7 +131,6 @@ func loadPrivateKey(path string, saveCerts bool) (*rsa.PrivateKey, error) {
 	}
 
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 

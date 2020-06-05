@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"log"
 	http "net/http"
 	"net/http/cookiejar"
@@ -64,7 +65,7 @@ func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, pass
 }
 
 func TestHandleLoginPOST(t *testing.T) {
-	ts := httptest.NewTLSServer(GetAuthRoutes(servers.Author))
+	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Author))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.auth", "secret", "kong.login.apply", "kong.consent.apply")
