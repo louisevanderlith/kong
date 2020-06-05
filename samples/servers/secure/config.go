@@ -12,7 +12,7 @@ var Author kong.Author
 func init() {
 	gob.Register(tokens.Claims{})
 
-	a, err := kong.CreateAuthority(fakes.NewFakeStore(), "")
+	a, err := kong.CreateAuthority(fakes.NewFakeStore())
 
 	if err != nil {
 		panic(err)
