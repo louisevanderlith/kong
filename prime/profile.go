@@ -1,7 +1,6 @@
 package prime
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
@@ -33,36 +32,18 @@ func (p Profile) GetClient(id string) (Client, error) {
 	return Client{}, errors.New("no such client")
 }
 
-func (p Profile) ProvideClaim(claim string) (string, error) {
+func (p Profile) ProvideClaim(claim string) (interface{}, error) {
 	switch claim {
 	case tokens.KongProfile:
 		return p.Title, nil
 	case tokens.KongLogo:
 		return p.ImageKey.String(), nil
 	case tokens.KongTerms:
-		ts, err := json.Marshal(p.Terms)
-
-		if err != nil {
-			return "", err
-		}
-
-		return string(ts), nil
+		return p.Terms, nil
 	case tokens.KongCodes:
-		cds, err := json.Marshal(p.Codes)
-
-		if err != nil {
-			return "", err
-		}
-
-		return string(cds), nil
+		return p.Codes, nil
 	case tokens.KongEndpoints:
-		points, err := json.Marshal(p.Endpoints)
-
-		if err != nil {
-			return "", err
-		}
-
-		return string(points), nil
+		return p.Endpoints, nil
 	default:
 		return p.Contacts.ProvideClaim(claim)
 	}

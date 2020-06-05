@@ -46,8 +46,10 @@ func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer) (tokens.Claim
 
 		sct := parts[0]
 		clm := parts[1]
-		val := ""
+
+		var val interface{}
 		var err error
+
 		switch sct {
 		case "profile":
 			val, err = prof.ProvideClaim(clm)
@@ -57,7 +59,7 @@ func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer) (tokens.Claim
 					return nil, errors.New("user token expired")
 				}
 
-				val = usrtkn.GetClaim(clm)
+				val = usrtkn.GetClaimString(clm)
 			} else {
 				return nil, errors.New("user login required")
 			}

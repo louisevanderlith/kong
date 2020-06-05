@@ -97,7 +97,7 @@ func TestAuthority_RequestToken_UserInfo_ValidUser_RequiresConsent(t *testing.T)
 		t.Error(err)
 		return
 	}
-
+	log.Println(utkn)
 	tkn, err := authr.RequestToken("kong.viewr", "secret", utkn, scp)
 
 	if err != nil {

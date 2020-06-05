@@ -21,11 +21,12 @@ type Claimer interface {
 	HasUser() bool
 	GetUserinfo() (string, string) //key, username
 	IsExpired() bool
-	AddClaim(key, val string) error
+	AddClaim(key string, val interface{}) error
 	AddClaims(more Claimer) error
 	HasClaim(name string) bool
-	GetClaim(name string) string
-	GetAll() map[string]string
+	GetClaim(name string) interface{}
+	GetClaimString(name string) string
+	GetAll() map[string]interface{}
 	GetResourceURL(name string) (string, error)
 	GetCode(name string) (string, error)
 	GetTerm(name string) (string, error)
@@ -47,7 +48,7 @@ const (
 	UserConsent   = "user.consent"
 )
 
-type Claims map[string]string
+type Claims map[string]interface{}
 
 func StartClaims(id string) (Claimer, error) {
 	result := make(Claims)
@@ -92,7 +93,7 @@ func OpenClaims(raw string, prvKey *rsa.PrivateKey) (Claimer, error) {
 }
 
 func (c Claims) GetClient() string {
-	return c[KongClient]
+	return c.GetClaimString(KongClient)
 }
 
 func (c Claims) HasUser() bool {
@@ -100,7 +101,7 @@ func (c Claims) HasUser() bool {
 }
 
 func (c Claims) GetUserinfo() (string, string) {
-	return c.GetClaim(UserKey), c.GetClaim(UserName)
+	return c.GetClaimString(UserKey), c.GetClaimString(UserName)
 }
 
 func (c Claims) IsExpired() bool {
@@ -110,17 +111,23 @@ func (c Claims) IsExpired() bool {
 		return true
 	}
 
-	exp, err := time.Parse("2006-01-02T15:04:05", val)
+	exp, ok := val.(time.Time)
 
-	if err != nil {
-		log.Println(err)
+	if !ok {
 		return true
 	}
+
+	//exp, err := time.Parse("2006-01-02T15:04:05", val)
+
+	//if err != nil {
+	//	log.Println(err)
+	//		return true
+	//	}
 
 	return time.Now().After(exp)
 }
 
-func (c Claims) GetAll() map[string]string {
+func (c Claims) GetAll() map[string]interface{} {
 	return c
 }
 
@@ -130,13 +137,17 @@ func (c Claims) HasClaim(name string) bool {
 	return ok
 }
 
-func (c Claims) GetClaim(name string) string {
+func (c Claims) GetClaim(name string) interface{} {
 	return c[name]
 }
 
-func (c Claims) AddClaim(key, val string) error {
+func (c Claims) GetClaimString(name string) string {
+	return c[name].(string)
+}
+
+func (c Claims) AddClaim(key string, val interface{}) error {
 	//empty values are simply skipped
-	if len(val) == 0 {
+	if val == nil {
 		return nil
 	}
 
@@ -151,7 +162,7 @@ func (c Claims) AddClaim(key, val string) error {
 
 func (c Claims) AddClaims(more Claimer) error {
 	for k, v := range more.GetAll() {
-		if len(v) > 0 {
+		if v != nil {
 			err := c.AddClaim(k, v)
 
 			if err != nil {
@@ -164,11 +175,11 @@ func (c Claims) AddClaims(more Claimer) error {
 }
 
 func (c Claims) GetId() string {
-	return c[KongID]
+	return c.GetClaimString(KongID)
 }
 
 func (c Claims) GetProfile() string {
-	return c[KongProfile]
+	return c.GetClaimString(KongProfile)
 }
 
 func (c Claims) GetKong() Claimer {
@@ -184,7 +195,7 @@ func (c Claims) GetKong() Claimer {
 }
 
 func (c Claims) getObject(claim string) map[string]string {
-	val := c.GetClaim(claim)
+	val := c.GetClaimString(claim)
 	res := make(map[string]string)
 	err := json.Unmarshal([]byte(val), &res)
 
