@@ -2,7 +2,6 @@ package samples
 
 import (
 	"github.com/louisevanderlith/kong/samples/handlers/api"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,6 +22,4 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatal(rr.Code, rr.Body.String())
 	}
-
-	log.Println(rr.Body.String())
 }

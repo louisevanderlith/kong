@@ -1,7 +1,7 @@
 package prime
 
 import (
-	"errors"
+	"fmt"
 	"github.com/louisevanderlith/husk"
 )
 
@@ -14,7 +14,7 @@ func (c Contacts) ProvideClaim(claim string) (string, error) {
 		}
 	}
 
-	return "", errors.New("no claim found")
+	return "", fmt.Errorf("contacts: no '%s' claim found", claim)
 }
 
 //Contact holds information like email, facebook, cellphone

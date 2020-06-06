@@ -1,7 +1,7 @@
 package prime
 
 import (
-	"errors"
+	"fmt"
 	"github.com/louisevanderlith/husk"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -66,7 +66,7 @@ func (u User) ProvideClaim(claim string) (string, error) {
 		return u.Contacts.ProvideClaim(claim)
 	}
 
-	return "", errors.New("no claim found")
+	return "", fmt.Errorf("user: no '%s' claim found", claim)
 }
 
 func (u User) ResourceAllowed(name string) bool {
