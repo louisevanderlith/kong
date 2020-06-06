@@ -196,14 +196,14 @@ func (c Claims) GetResourceURL(name string) (string, error) {
 		return "", errors.New("kong.endpoints claim not found")
 	}
 
-	ends := endsClms.(map[string]string)
+	ends := endsClms.(map[string]interface{})
 	url, ok := ends[name]
 
 	if !ok {
 		return "", fmt.Errorf("endpoint %s not found in %v", name, ends)
 	}
 
-	return url, nil
+	return url.(string), nil
 }
 
 func (c Claims) GetCode(name string) (string, error) {
@@ -213,14 +213,14 @@ func (c Claims) GetCode(name string) (string, error) {
 		return "", errors.New("kong.codes claim not found")
 	}
 
-	codes := codesClms.(map[string]string)
-	url, ok := codes[name]
+	codes := codesClms.(map[string]interface{})
+	code, ok := codes[name]
 
 	if !ok {
 		return "", fmt.Errorf("code %s not found in %v", name, codes)
 	}
 
-	return url, nil
+	return code.(string), nil
 }
 
 func (c Claims) GetTerm(name string) (string, error) {
@@ -230,12 +230,12 @@ func (c Claims) GetTerm(name string) (string, error) {
 		return "", errors.New("kong.terms claim not found")
 	}
 
-	terms := termsClms.(map[string]string)
-	url, ok := terms[name]
+	terms := termsClms.(map[string]interface{})
+	term, ok := terms[name]
 
 	if !ok {
 		return "", fmt.Errorf("terms %s not found in %v", name, terms)
 	}
 
-	return url, nil
+	return term.(string), nil
 }
