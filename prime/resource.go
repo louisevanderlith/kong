@@ -34,7 +34,7 @@ func (r Resource) ExtractNeeds(claims tokens.Claimer) (tokens.Claimer, error) {
 	return result, nil
 }
 
-func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer) (tokens.Claimer, error) {
+func (r Resource) AssignNeeds(usrtkn tokens.Claimer) (tokens.Claimer, error) {
 	result := make(tokens.Claims)
 
 	for _, v := range r.Needs {
@@ -45,24 +45,23 @@ func (r Resource) AssignNeeds(prof Profile, usrtkn tokens.Claimer) (tokens.Claim
 		}
 
 		sct := parts[0]
-		clm := parts[1]
 
 		var val interface{}
 		var err error
 
 		switch sct {
-		case "profile":
-			val, err = prof.ProvideClaim(clm)
+		case "kong":
+			//val, err = clnt.ExtractNeeds(prof) //prof.ProvideClaim(v)
 		case "user":
-			if usrtkn != nil {
-				if usrtkn.IsExpired() {
-					return nil, errors.New("user token expired")
-				}
-
-				val = usrtkn.GetClaimString(clm)
-			} else {
+			if usrtkn == nil {
 				return nil, errors.New("user login required")
 			}
+
+			if usrtkn.IsExpired() {
+				return nil, errors.New("user token expired")
+			}
+
+			val = usrtkn.GetClaimString(v)
 		}
 
 		if err != nil {

@@ -3,7 +3,6 @@ package tests
 import (
 	"fmt"
 	"github.com/louisevanderlith/kong/tokens"
-	"log"
 	"testing"
 )
 
@@ -91,13 +90,28 @@ func TestAuthority_RequestToken_UserInfo_ValidUser_RequiresConsent(t *testing.T)
 		return
 	}
 
-	utkn, err := authr.Sign(uclms)
+	partial, err := authr.Sign(uclms)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	log.Println(utkn)
+
+	// Apply Consent to Partial token
+	usrClms, err := authr.Consent(partial, tokens.KongProfile, tokens.KongClient, tokens.UserName, tokens.UserKey)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	utkn, err := authr.Sign(usrClms)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
 	tkn, err := authr.RequestToken("kong.viewr", "secret", utkn, scp)
 
 	if err != nil {
@@ -111,7 +125,7 @@ func TestAuthority_RequestToken_UserInfo_ValidUser_RequiresConsent(t *testing.T)
 	}
 
 	rsrc, _ := authr.GetStore().GetResource(scp)
-	log.Println(tkn.GetAll())
+
 	for _, v := range rsrc.Needs {
 		if !tkn.HasClaim(v) {
 			t.Errorf(fmt.Sprintf("'%s' claim not found", v))
@@ -120,6 +134,7 @@ func TestAuthority_RequestToken_UserInfo_ValidUser_RequiresConsent(t *testing.T)
 
 		expct := answr[v]
 		actl := tkn.GetClaim(v)
+
 		if actl == expct {
 			t.Errorf("found %s, expected %s", actl, expct)
 		}
