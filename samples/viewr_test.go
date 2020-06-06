@@ -4,7 +4,6 @@ import (
 	"github.com/louisevanderlith/kong"
 	"github.com/louisevanderlith/kong/samples/handlers/viewr"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,6 +22,4 @@ func TestHandleIndexGET_LoginRequired(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatal(rr.Code, rr.Body.String())
 	}
-
-	log.Println(rr.Body.String())
 }

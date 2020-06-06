@@ -59,10 +59,6 @@ func (a authority) openClaims(token string) (tokens.Claimer, error) {
 		return nil, err
 	}
 
-	if result.IsExpired() {
-		return nil, errors.New("token expired")
-	}
-
 	return result, nil
 }
 
@@ -149,8 +145,6 @@ func (a authority) Login(id, username, password string) (tokens.Claimer, error) 
 	}
 
 	result.AddClaims(usrClaims)
-	result.AddClaim(tokens.KongIssued, time.Now().Format("2006-01-02T15:04:05"))
-	result.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
 
 	return result, nil
 }
@@ -191,6 +185,9 @@ func (a authority) Consent(usrtkn string, claims ...string) (tokens.Claimer, err
 		ut.AddClaim(v, "")
 	}
 
+	ut.AddClaim(tokens.KongIssued, time.Now())
+	ut.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5))
+
 	return ut, nil
 }
 
@@ -216,8 +213,8 @@ func (a authority) RequestToken(id, secret, usrtkn string, resources ...string) 
 		return nil, errors.New("client unauthorized")
 	}
 
-	result.AddClaim(tokens.KongIssued, time.Now().Format("2006-01-02T15:04:05"))
-	result.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5).Format("2006-01-02T15:04:05"))
+	result.AddClaim(tokens.KongIssued, time.Now())
+	result.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5))
 
 	//Get Client needs from Profile
 	result.AddClaims(clnt.ExtractNeeds(prof))
@@ -243,7 +240,7 @@ func (a authority) RequestToken(id, secret, usrtkn string, resources ...string) 
 			return nil, errors.New("scope not allowed")
 		}
 
-		vals, err := resrc.AssignNeeds(prof, ut)
+		vals, err := resrc.AssignNeeds(ut)
 
 		if err != nil {
 			return nil, err
@@ -256,19 +253,23 @@ func (a authority) RequestToken(id, secret, usrtkn string, resources ...string) 
 }
 
 func (a authority) getUserToken(usrtkn string) (prime.Userer, tokens.Claimer, error) {
-	var usr prime.Userer
-	var ut tokens.Claimer
-
-	if len(usrtkn) > 0 {
-		ut, err := a.openClaims(usrtkn)
-
-		if err != nil {
-			return nil, nil, err
-		}
-
-		k, _ := ut.GetUserinfo()
-		usr = a.Store.GetUser(k)
+	if len(usrtkn) == 0 {
+		return nil, nil, nil
 	}
+
+	ut, err := a.openClaims(usrtkn)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if ut.IsExpired() {
+		return nil, nil, errors.New("token expired")
+	}
+
+	k, _ := ut.GetUserinfo()
+	usr := a.Store.GetUser(k)
+
 	return usr, ut, nil
 }
 
@@ -278,6 +279,10 @@ func (a authority) Info(token, secret string) (tokens.Claimer, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if clms.IsExpired() {
+		return nil, errors.New("token expired")
 	}
 
 	_, clnt, err := a.getProfileClient(clms)
@@ -309,6 +314,10 @@ func (a authority) Inspect(token, resource, secret string) (tokens.Claimer, erro
 
 	if err != nil {
 		return nil, err
+	}
+
+	if clms.IsExpired() {
+		return nil, errors.New("token expired")
 	}
 
 	return resrc.ExtractNeeds(clms)

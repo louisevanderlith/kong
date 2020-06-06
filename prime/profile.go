@@ -2,6 +2,7 @@ package prime
 
 import (
 	"errors"
+	"fmt"
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
 )
@@ -48,5 +49,5 @@ func (p Profile) ProvideClaim(claim string) (interface{}, error) {
 		return p.Contacts.ProvideClaim(claim)
 	}
 
-	return "", errors.New("no claim found")
+	return "", fmt.Errorf("profile: no '%s' claim found", claim)
 }

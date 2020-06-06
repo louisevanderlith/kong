@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
-	"log"
 	http "net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -81,8 +80,6 @@ func TestHandleLoginPOST(t *testing.T) {
 		t.Error(err)
 		return
 	}
-
-	log.Println(ut)
 }
 
 /*

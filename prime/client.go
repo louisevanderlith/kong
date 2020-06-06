@@ -1,7 +1,6 @@
 package prime
 
 import (
-	"encoding/json"
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
@@ -67,13 +66,7 @@ func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 			}
 		}
 
-		jends, err := json.Marshal(ends)
-
-		if err != nil {
-			return nil
-		}
-
-		result.AddClaim(tokens.KongEndpoints, string(jends))
+		result.AddClaim(tokens.KongEndpoints, ends)
 	}
 
 	return result

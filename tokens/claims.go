@@ -45,7 +45,6 @@ const (
 	KongExpired   = "kong.exp"
 	UserKey       = "user.key"
 	UserName      = "user.name"
-	UserConsent   = "user.consent"
 )
 
 type Claims map[string]interface{}
@@ -111,18 +110,11 @@ func (c Claims) IsExpired() bool {
 		return true
 	}
 
-	exp, ok := val.(time.Time)
+	exp, err := time.Parse("2006-01-02T15:04:05.000000000Z07:00", val.(string))
 
-	if !ok {
+	if err != nil {
 		return true
 	}
-
-	//exp, err := time.Parse("2006-01-02T15:04:05", val)
-
-	//if err != nil {
-	//	log.Println(err)
-	//		return true
-	//	}
 
 	return time.Now().After(exp)
 }
@@ -142,6 +134,10 @@ func (c Claims) GetClaim(name string) interface{} {
 }
 
 func (c Claims) GetClaimString(name string) string {
+	if !c.HasClaim(name) {
+		return ""
+	}
+
 	return c[name].(string)
 }
 
