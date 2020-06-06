@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
@@ -190,21 +189,14 @@ func (c Claims) GetKong() Claimer {
 	return result
 }
 
-func (c Claims) getObject(claim string) map[string]string {
-	val := c.GetClaimString(claim)
-	res := make(map[string]string)
-	err := json.Unmarshal([]byte(val), &res)
+func (c Claims) GetResourceURL(name string) (string, error) {
+	endsClms := c.GetClaim(KongEndpoints)
 
-	if err != nil {
-		log.Println(err)
-		return nil
+	if endsClms == nil {
+		return "", errors.New("kong.endpoints claim not found")
 	}
 
-	return res
-}
-
-func (c Claims) GetResourceURL(name string) (string, error) {
-	ends := c.getObject(KongEndpoints)
+	ends := endsClms.(map[string]string)
 	url, ok := ends[name]
 
 	if !ok {
@@ -215,7 +207,13 @@ func (c Claims) GetResourceURL(name string) (string, error) {
 }
 
 func (c Claims) GetCode(name string) (string, error) {
-	codes := c.getObject(KongCodes)
+	codesClms := c.GetClaim(KongCodes)
+
+	if codesClms == nil {
+		return "", errors.New("kong.codes claim not found")
+	}
+
+	codes := codesClms.(map[string]string)
 	url, ok := codes[name]
 
 	if !ok {
@@ -226,7 +224,13 @@ func (c Claims) GetCode(name string) (string, error) {
 }
 
 func (c Claims) GetTerm(name string) (string, error) {
-	terms := c.getObject(KongTerms)
+	termsClms := c.GetClaim(KongTerms)
+
+	if termsClms == nil {
+		return "", errors.New("kong.terms claim not found")
+	}
+
+	terms := termsClms.(map[string]string)
 	url, ok := terms[name]
 
 	if !ok {
