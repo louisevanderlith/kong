@@ -18,7 +18,6 @@ type Author interface {
 	Consent(ut string, claims ...string) (tokens.Claimer, error) //finalize token
 	Sign(token tokens.Claimer) (string, error)
 	QueryClient(partial string) (prime.ClientQuery, error)
-	//GetCallback(token tokens.Claimer) (string, error)
 	GetStore() stores.AuthStore
 }
 
@@ -323,6 +322,20 @@ func (a authority) Inspect(token, resource, secret string) (tokens.Claimer, erro
 	return resrc.ExtractNeeds(clms)
 }
 
+func (a authority) Whitelist(resource, secret string) ([]string, error) {
+	resrc, err := a.Store.GetResource(resource)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !resrc.VerifySecret(secret) {
+		return nil, errors.New("invalid secret")
+	}
+
+	return a.Store.GetWhitelist(), nil
+}
+
 func (a authority) getProfileClient(clms tokens.Claimer) (prime.Profile, prime.Client, error) {
 	prof, err := a.Store.GetProfile(clms.GetProfile())
 
@@ -338,37 +351,3 @@ func (a authority) getProfileClient(clms tokens.Claimer) (prime.Profile, prime.C
 
 	return prof, clnt, nil
 }
-
-/*
-//Barrel returns claims that are currently rolling
-func (a Authority) Barrel(r *http.Request) (tokens.Claimer, error) {
-	session, err := sessions.Store.Get(r, "sess-store")
-	if err != nil {
-		return nil, err
-	}
-
-	res, ok := session.Values["user.id"]
-
-	if !ok {
-		return nil, errors.New("no barrel")
-	}
-
-	return res.(tokens.Claimer), nil
-}
-
-
-func (a Authority) populateClaims(resource string, prof prime.Profile, ut tokens.UserToken) (string, error) {
-	resrc, err := a.Resources.GetResource(resource)
-
-	if err != nil {
-		return "", err
-	}
-
-	for k, v := range clms.GetClaims() {
-		fullclaim := fmt.Sprintf("%s.%s", resource, k)
-		clmer.AddClaim(fullclaim, v)
-	}
-
-	return "", errors.New("nothing happened")
-}
-*/

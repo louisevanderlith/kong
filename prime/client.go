@@ -9,6 +9,7 @@ import (
 type Client struct {
 	Name             string `hsk:"size(30)"`
 	Secret           string
+	Url              string `hsk:"size(128)"`
 	AllowedResources []string
 	TermsEnabled     bool
 	CodesEnabled     bool

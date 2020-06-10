@@ -22,6 +22,18 @@ func NewFakeStore() stores.AuthStore {
 	}
 }
 
+func (s fakeStore) GetWhitelist() []string {
+	var result []string
+
+	for _, v := range s.Profiles {
+		for _, c := range v.Clients {
+			result = append(result, c.Url)
+		}
+	}
+
+	return result
+}
+
 func (s fakeStore) GetProfile(id string) (prime.Profile, error) {
 	if len(id) == 0 {
 		return prime.Profile{}, errors.New("id is empty")

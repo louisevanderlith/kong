@@ -10,7 +10,6 @@ func NewFakeProfiles() []prime.Profile {
 		{
 			Title:       "kong",
 			Description: "Rollings claims authenticator",
-			Domain:      "",
 			Contacts: []prime.Contact{
 				{
 					Icon:  "fa-facebook",
@@ -23,6 +22,7 @@ func NewFakeProfiles() []prime.Profile {
 				{
 					Name:   "viewr",
 					Secret: "secret",
+					Url:    "http://localhost:80",
 					AllowedResources: []string{
 						"api.profile.view",
 						"api.user.view"},
@@ -30,6 +30,7 @@ func NewFakeProfiles() []prime.Profile {
 				{
 					Name:   "auth",
 					Secret: "secret",
+					Url:    "http://localhost:8094",
 					AllowedResources: []string{
 						"kong.consent.apply",
 						"kong.login.apply"},
