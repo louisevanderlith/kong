@@ -172,6 +172,36 @@ func FetchToken(clnt *http.Client, secureUrl, clientId, secret string, scopes ..
 	return string(body), nil
 }
 
+func Whitelist(clnt *http.Client, secureUrl, name, secret string) ([]string, error) {
+	req, err := http.NewRequest(http.MethodGet, secureUrl+"/whitelist", nil)
+	req.SetBasicAuth(name, secret)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := clnt.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	var wht []string
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&wht)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return wht, nil
+}
+
+//Exchange can be called by Clients and Resources to obtain information from token.
+//Clients use /info
+//Resources use /inspect
 func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens.Claimer, error) {
 	insReq := prime.InspectReq{AccessCode: token}
 	obj, err := json.Marshal(insReq)
