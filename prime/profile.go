@@ -10,7 +10,6 @@ import (
 type Profile struct {
 	Title       string `hsk:"size(128)"`
 	Description string `hsk:"size(512)" json:",omitempty"`
-	Domain      string `hsk:"size(128)"`
 	Contacts    Contacts
 	ImageKey    husk.Key `hsk:"null"`
 	Clients     []Client
