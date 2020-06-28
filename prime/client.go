@@ -3,6 +3,7 @@ package prime
 import (
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
+	"golang.org/x/crypto/bcrypt"
 	"strings"
 )
 
@@ -15,7 +16,7 @@ type Client struct {
 	CodesEnabled     bool
 }
 
-func (c Client) Valid() (bool, error) {
+func (c Client) Valid() error {
 	return husk.ValidateStruct(&c)
 }
 
@@ -30,7 +31,8 @@ func (c Client) ResourceAllowed(resource string) bool {
 }
 
 func (c Client) VerifySecret(secret string) bool {
-	return c.Secret == secret
+	err := bcrypt.CompareHashAndPassword([]byte(c.Secret), []byte(secret))
+	return err == nil
 }
 
 func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
