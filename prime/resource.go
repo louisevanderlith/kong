@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
+	"golang.org/x/crypto/bcrypt"
 	"strings"
 )
 
@@ -14,12 +15,27 @@ type Resource struct {
 	Needs       []string
 }
 
+func NewResource(name, displayName, secret string, needs []string) Resource {
+	scrt, err := bcrypt.GenerateFromPassword([]byte(secret), 11)
+	if err != nil {
+		panic(err)
+	}
+
+	return Resource{
+		Name:        name,
+		DisplayName: displayName,
+		Secret:      string(scrt),
+		Needs:       needs,
+	}
+}
+
 func (r Resource) Valid() error {
 	return husk.ValidateStruct(&r)
 }
 
 func (r Resource) VerifySecret(secret string) bool {
-	return r.Secret == secret
+	err := bcrypt.CompareHashAndPassword([]byte(r.Secret), []byte(secret))
+	return err == nil
 }
 
 func (r Resource) ExtractNeeds(claims tokens.Claimer) (tokens.Claimer, error) {
@@ -67,7 +83,7 @@ func (r Resource) AssignNeeds(usrtkn tokens.Claimer) (tokens.Claimer, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		result.AddClaim(v, val)
 	}
 
