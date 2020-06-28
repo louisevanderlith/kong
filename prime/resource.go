@@ -14,7 +14,7 @@ type Resource struct {
 	Needs       []string
 }
 
-func (r Resource) Valid() (bool, error) {
+func (r Resource) Valid() error {
 	return husk.ValidateStruct(&r)
 }
 

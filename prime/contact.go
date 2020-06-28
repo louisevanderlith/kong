@@ -24,6 +24,6 @@ type Contact struct {
 	Value string `hsk:"size(256)"`
 }
 
-func (c Contact) Valid() (bool, error) {
+func (c Contact) Valid() error {
 	return husk.ValidateStruct(&c)
 }
