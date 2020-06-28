@@ -19,16 +19,21 @@ type User struct {
 	Name      string `hsk:"size(75)"`
 	Verified  bool   `hsk:"default(false)"`
 	Email     string `hsk:"size(128)"`
-	Password  []byte `hsk:"min(6)"`
+	Password  string `hsk:"min(6)"`
 	Contacts  Contacts
 	Resources []string
 }
 
-func NewUser(name, email string, password []byte, verified bool, contacts Contacts, resources []string) Userer {
+func NewUser(name, email, password string, verified bool, contacts Contacts, resources []string) Userer {
+	pss, err := bcrypt.GenerateFromPassword([]byte(password), 11)
+	if err != nil {
+		panic(err)
+	}
+
 	return User{
 		Name:      name,
 		Email:     email,
-		Password:  password,
+		Password:  string(pss),
 		Verified:  verified,
 		Contacts:  contacts,
 		Resources: resources,
@@ -52,7 +57,7 @@ func (u User) Valid() error {
 }
 
 func (u User) VerifyPassword(password string) bool {
-	err := bcrypt.CompareHashAndPassword(u.Password, []byte(password))
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	return err == nil
 }
 
