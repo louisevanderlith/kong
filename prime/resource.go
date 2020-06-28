@@ -67,7 +67,7 @@ func (r Resource) AssignNeeds(usrtkn tokens.Claimer) (tokens.Claimer, error) {
 		if err != nil {
 			return nil, err
 		}
-
+		
 		result.AddClaim(v, val)
 	}
 
