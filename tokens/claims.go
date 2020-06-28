@@ -29,7 +29,6 @@ type Claimer interface {
 	GetResourceURL(name string) (string, error)
 	GetCode(name string) (string, error)
 	GetTerm(name string) (string, error)
-	GetEndpointmap() string
 }
 
 //Common claims
@@ -154,17 +153,6 @@ func (c Claims) AddClaim(key string, val interface{}) error {
 	c[key] = val
 
 	return nil
-}
-
-//GetEndpointmap returns a json object with endpoints
-func (c Claims) GetEndpointmap() string {
-	if !c.HasClaim(KongEndpoints) {
-		return "{}"
-	}
-
-	bits, _ := json.Marshal(c.GetClaim(KongEndpoints))
-
-	return string(bits)
 }
 
 func (c Claims) AddClaims(more Claimer) error {

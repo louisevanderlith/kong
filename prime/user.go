@@ -47,7 +47,7 @@ func (u User) IsVerified() bool {
 	return u.Verified
 }
 
-func (u User) Valid() (bool, error) {
+func (u User) Valid() error {
 	return husk.ValidateStruct(&u)
 }
 

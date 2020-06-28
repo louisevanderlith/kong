@@ -18,7 +18,7 @@ type Profile struct {
 	Terms       map[string]string
 }
 
-func (p Profile) Valid() (bool, error) {
+func (p Profile) Valid() error {
 	return husk.ValidateStruct(&p)
 }
 
