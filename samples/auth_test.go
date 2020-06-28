@@ -80,6 +80,10 @@ func TestHandleLoginPOST(t *testing.T) {
 		t.Error(err)
 		return
 	}
+
+	if len(ut) == 0 {
+		t.Error("user token is empty")
+	}
 }
 
 /*

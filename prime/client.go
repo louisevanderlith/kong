@@ -16,6 +16,22 @@ type Client struct {
 	CodesEnabled     bool
 }
 
+func NewClient(name, secret, url string, terms, codes bool, resources []string) Client {
+	scrt, err := bcrypt.GenerateFromPassword([]byte(secret), 11)
+	if err != nil {
+		panic(err)
+	}
+
+	return Client{
+		Name:             name,
+		Secret:           string(scrt),
+		Url:              url,
+		TermsEnabled:     terms,
+		CodesEnabled:     codes,
+		AllowedResources: resources,
+	}
+}
+
 func (c Client) Valid() error {
 	return husk.ValidateStruct(&c)
 }

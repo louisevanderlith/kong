@@ -21,7 +21,7 @@ func NewFakeProfiles() []prime.Profile {
 			Clients: []prime.Client{
 				{
 					Name:   "viewr",
-					Secret: "secret",
+					Secret: "$2a$11$JWcHYGC7K2zY4NGOD/n5puq7w8zij3GVoU9BD1j6xDtHHqFdLcV6S",
 					Url:    "http://localhost:80",
 					AllowedResources: []string{
 						"api.profile.view",
@@ -29,7 +29,7 @@ func NewFakeProfiles() []prime.Profile {
 				},
 				{
 					Name:   "auth",
-					Secret: "secret",
+					Secret: "$2a$11$JWcHYGC7K2zY4NGOD/n5puq7w8zij3GVoU9BD1j6xDtHHqFdLcV6S",
 					Url:    "http://localhost:8094",
 					AllowedResources: []string{
 						"kong.consent.apply",
