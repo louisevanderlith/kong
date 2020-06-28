@@ -14,7 +14,7 @@ func TestAuthority_Inspect_ResourceRequest(t *testing.T) {
 	resrc := prime.Resource{
 		Name:        "api.profile.view",
 		DisplayName: "Displays the profile's information",
-		Secret:      "secret",
+		Secret:      "$2a$11$JWcHYGC7K2zY4NGOD/n5puq7w8zij3GVoU9BD1j6xDtHHqFdLcV6S",
 		Needs:       []string{tokens.KongProfile, tokens.KongClient},
 	}
 
