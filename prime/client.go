@@ -54,6 +54,9 @@ func (c Client) VerifySecret(secret string) bool {
 func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 	result := make(tokens.Claims)
 
+	v, _ := p.ProvideClaim(tokens.KongTerms)
+	result.AddClaim(tokens.KongLogo, v)
+
 	if c.TermsEnabled {
 		v, _ := p.ProvideClaim(tokens.KongTerms)
 		result.AddClaim(tokens.KongTerms, v)
@@ -63,6 +66,8 @@ func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 		v, _ := p.ProvideClaim(tokens.KongCodes)
 		result.AddClaim(tokens.KongCodes, v)
 	}
+
+	result.AddClaim(tokens.KongContacts, p.Contacts)
 
 	if len(c.AllowedResources) > 0 {
 		ends := make(map[string]string)
