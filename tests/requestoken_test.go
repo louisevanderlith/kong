@@ -47,7 +47,16 @@ func TestAuthority_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 	}
 
 	answr := map[string]string{
-		tokens.KongProfile: "",
+		tokens.KongProfile:   "",
+		tokens.KongEndpoints: "",
+		tokens.KongLogo:      "",
+		tokens.KongID:        "",
+		tokens.KongClient:    "",
+		tokens.KongTerms:     "",
+		tokens.KongIssued:    "",
+		tokens.KongExpired:   "",
+		tokens.KongCodes:     "",
+		tokens.KongContacts:  "",
 	}
 
 	rsrc, _ := authr.GetStore().GetResource(rname)

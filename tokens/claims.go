@@ -42,6 +42,7 @@ const (
 	KongLogo      = "kong.logo"
 	KongIssued    = "kong.iat"
 	KongExpired   = "kong.exp"
+	KongContacts  = "kong.contacts"
 	UserKey       = "user.key"
 	UserName      = "user.name"
 )
