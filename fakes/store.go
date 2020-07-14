@@ -8,18 +8,16 @@ import (
 	"strings"
 )
 
-type fakeStore struct {
-	Profiles  []prime.Profile
-	Resources []prime.Resource
-	Users     map[string]prime.Userer
-}
-
 func NewFakeStore() stores.AuthStore {
 	return fakeStore{
 		Profiles:  NewFakeProfiles(),
 		Resources: NewFakeResources(),
-		Users:     NewFakeUsers(),
 	}
+}
+
+type fakeStore struct {
+	Profiles  []prime.Profile
+	Resources []prime.Resource
 }
 
 func (s fakeStore) GetWhitelist() []string {
@@ -45,20 +43,6 @@ func (s fakeStore) GetProfile(id string) (prime.Profile, error) {
 	}
 
 	return prime.Profile{}, fmt.Errorf("profile '%s' not found", id)
-}
-
-func (s fakeStore) GetUser(id string) prime.Userer {
-	return s.Users[id]
-}
-
-func (s fakeStore) GetUserByName(username string) (string, prime.Userer) {
-	for k, v := range s.Users {
-		if v.GetEmail() == username {
-			return k, v
-		}
-	}
-
-	return "", nil
 }
 
 func (s fakeStore) GetResource(name string) (prime.Resource, error) {
