@@ -23,12 +23,14 @@ type Author interface {
 
 type authority struct {
 	Store stores.AuthStore
+	Users stores.UserStore
 	key   []byte //must be 32byte
 }
 
-func CreateAuthority(store stores.AuthStore) (Author, error) {
+func CreateAuthority(store stores.AuthStore, users stores.UserStore) (Author, error) {
 	return authority{
 		Store: store,
+		Users: users,
 		key:   generateKey(32),
 	}, nil
 }
@@ -150,7 +152,7 @@ func (a authority) Login(id, username, password string) (tokens.Claimer, error) 
 
 //loginUser returns the User's Key Token after successful authentication
 func (a authority) loginUser(username, password string) (tokens.Claimer, error) {
-	id, usr := a.Store.GetUserByName(username)
+	id, usr := a.Users.GetUserByName(username)
 
 	if usr == nil {
 		return nil, errors.New("invalid user")
@@ -267,7 +269,7 @@ func (a authority) getUserToken(usrtkn string) (prime.Userer, tokens.Claimer, er
 	}
 
 	k, _ := ut.GetUserinfo()
-	usr := a.Store.GetUser(k)
+	usr := a.Users.GetUser(k)
 
 	return usr, ut, nil
 }

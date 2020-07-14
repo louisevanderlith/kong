@@ -9,7 +9,7 @@ import (
 var authr kong.Author
 
 func init() {
-	a, err := kong.CreateAuthority(fakes.NewFakeStore())
+	a, err := kong.CreateAuthority(fakes.NewFakeStore(), fakes.NewFakeUserStore())
 
 	if err != nil {
 		panic(err)
