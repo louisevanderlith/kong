@@ -83,9 +83,9 @@ func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
 				continue
 			}
 
-			v, ok := p.Endpoints[api]
+			v := p.Endpoints.Get(api)
 
-			if ok {
+			if len(v) > 0 {
 				ends[api] = v
 			}
 		}
