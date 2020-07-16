@@ -13,9 +13,9 @@ type Profile struct {
 	Contacts    Contacts
 	ImageKey    husk.Key `hsk:"null"`
 	Clients     []Client
-	Endpoints   map[string]string
-	Codes       map[string]string
-	Terms       map[string]string
+	Endpoints   Map
+	Codes       Map
+	Terms       Map
 }
 
 func (p Profile) Valid() error {

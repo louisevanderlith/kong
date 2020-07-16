@@ -36,11 +36,11 @@ func NewFakeProfiles() []prime.Profile {
 						"kong.login.apply"},
 				},
 			},
-			Endpoints: map[string]string{
-				"api": "https://api.kong",
+			Endpoints: prime.Map{
+				{"api", "https://api.kong"},
 			},
-			Codes: map[string]string{
-				"gtag": "000000-00",
+			Codes: prime.Map{
+				{"gtag", "000000-00"},
 			},
 		},
 	}
