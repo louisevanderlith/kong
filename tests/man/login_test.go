@@ -1,39 +1,38 @@
-package tests
+package man
 
-import "testing"
+import (
+	"github.com/louisevanderlith/kong/samples/servers/entity"
+	"testing"
+)
 
 /*
 	Login Tokens only contain the Key and Name of the User
 	It has no expiry or issued-at time, because it's only a partial token
 */
-
 func TestAuthority_Login_HasClaim_UserInfo(t *testing.T) {
-	tkn, err := authr.Login("kong.viewr", "user@fake.com", "user1pass")
+	tkn, err := entity.Manager.Login("kong.viewr", "user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if !tkn.HasUser() {
-		t.Error("token doesn't have user")
-		return
-	}
-
-	k, n := tkn.GetUserinfo()
+	k := tkn.GetUserID()
 
 	if k != "00" {
 		t.Error("invalid user key", k)
 		return
 	}
 
+	n := tkn.GetDisplayName()
+
 	if n != "User 1" {
 		t.Error("invalid user name", n)
 	}
 }
 
-func TestAuthority_Login_HasClaim_IsExpired(t *testing.T) {
-	tkn, err := authr.Login("kong.viewr", "user@fake.com", "user1pass")
+func TestManager_Login_HasClaim_IsExpired(t *testing.T) {
+	tkn, err := entity.Manager.Login("kong.viewr", "user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error(err)

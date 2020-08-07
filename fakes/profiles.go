@@ -23,6 +23,8 @@ func NewFakeProfiles() []prime.Profile {
 					Name:   "viewr",
 					Secret: "$2a$11$JWcHYGC7K2zY4NGOD/n5puq7w8zij3GVoU9BD1j6xDtHHqFdLcV6S",
 					Url:    "http://localhost:80",
+					TermsEnabled: true,
+					CodesEnabled: true,
 					AllowedResources: []string{
 						"api.profile.view",
 						"api.user.view"},

@@ -11,7 +11,7 @@ import (
 
 func TestHandleIndexGET_LoginRequired(t *testing.T) {
 	authS := httptest.NewServer(GetAuthRoutes())
-	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Author))
+	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)

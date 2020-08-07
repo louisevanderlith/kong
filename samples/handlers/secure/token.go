@@ -12,8 +12,7 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 	clnt, pass, ok := r.BasicAuth()
 
 	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(nil)
+		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 
@@ -22,26 +21,24 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 	err := dec.Decode(&req)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		log.Println("Bind Error", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 
-	tkn, err := secure.Author.RequestToken(clnt, pass, req.UserToken, req.Scopes...)
+	tkn, err := secure.Security.RequestToken(clnt, pass, req.UserToken, req.Scopes...)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	stkn, err := secure.Author.Sign(tkn)
+	stkn, err := secure.Security.Sign(tkn, 5)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(stkn))
 }

@@ -1,22 +1,20 @@
 package secure
 
 import (
-	"encoding/gob"
 	"github.com/louisevanderlith/kong"
 	"github.com/louisevanderlith/kong/fakes"
-	"github.com/louisevanderlith/kong/tokens"
 )
 
-var Author kong.Author
+var Security kong.Security
 
 func init() {
-	gob.Register(tokens.Claims{})
+	//gob.Register(tokens.Claims)
 
-	a, err := kong.CreateAuthority(fakes.NewFakeStore(), fakes.NewFakeUserStore())
+	s, err := kong.CreateSecurity(fakes.NewFakeStore())
 
 	if err != nil {
 		panic(err)
 	}
 
-	Author = a
+	Security = s
 }

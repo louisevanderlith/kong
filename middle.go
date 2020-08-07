@@ -15,30 +15,21 @@ import (
 	"github.com/louisevanderlith/kong/tokens"
 )
 
-func InternalMiddleware(authr Author, name, secret string, handle http.HandlerFunc) http.HandlerFunc {
+func InternalMiddleware(securer Security, name, secret string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tkn, err := GetBearerToken(r)
 
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
+			log.Println("Get Bearer Token Error", err)
+			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
 
-		clms, err := authr.Inspect(tkn, name, secret)
+		clms, err := securer.Inspect(tkn, name, secret)
 
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
-			return
-		}
-
-		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
+			log.Println("Inspect Error", err)
+			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
 
@@ -50,30 +41,28 @@ func InternalMiddleware(authr Author, name, secret string, handle http.HandlerFu
 	}
 }
 
-func ClientMiddleware(clnt *http.Client, name, secret, secureUrl, authUrl string, handle http.HandlerFunc, scopes ...string) http.HandlerFunc {
+func ClientMiddleware(clnt *http.Client, name, secret, securityUrl, authorityUrl string, handle http.HandlerFunc, scopes ...string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tkn, err := FetchToken(clnt, secureUrl, name, secret, scopes...)
+		tkn, err := FetchToken(clnt, securityUrl, name, secret, scopes...)
 
 		if err != nil {
-			log.Println(err)
+			log.Println("Fetch Token Error", err)
 			if err.Error() == "user login required" {
 				cbUrl := fmt.Sprintf("https://%s/callback", r.Host)
-				consntUrl := fmt.Sprintf("%s/consent?client=%s&callback=%s", authUrl, name, cbUrl)
+				consntUrl := fmt.Sprintf("%s/consent?client=%s&callback=%s", authorityUrl, name, cbUrl)
 				http.Redirect(w, r, consntUrl, http.StatusTemporaryRedirect)
 				return
 			}
 
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write(nil)
+			http.Error(w, "", http.StatusInternalServerError)
 			return
 		}
 
-		claims, err := Exchange(http.DefaultClient, tkn, name, secret, secureUrl+"/info")
+		claims, err := Exchange(http.DefaultClient, tkn, name, secret, securityUrl+"/info")
 
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
+			log.Println("Exchange Error", err)
+			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
 
@@ -85,23 +74,21 @@ func ClientMiddleware(clnt *http.Client, name, secret, secureUrl, authUrl string
 	}
 }
 
-func ResourceMiddleware(name, secret, authUrl string, handle http.HandlerFunc) http.HandlerFunc {
+func ResourceMiddleware(name, secret, securityUrl string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, err := GetBearerToken(r)
 
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
+			log.Println("Get Bearer Token Error", err)
+			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
 
-		claims, err := Exchange(http.DefaultClient, token, name, secret, authUrl+"/inspect")
+		claims, err := Exchange(http.DefaultClient, token, name, secret, securityUrl+"/inspect")
 
 		if err != nil {
-			log.Println(err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(nil)
+			log.Println("Exchange Error", err)
+			http.Error(w, "", http.StatusUnauthorized)
 			return
 		}
 
@@ -134,7 +121,7 @@ func GetBearerToken(r *http.Request) (string, error) {
 	return token, nil
 }
 
-func FetchToken(clnt *http.Client, secureUrl, clientId, secret string, scopes ...string) (string, error) {
+func FetchToken(clnt *http.Client, securityUrl, clientId, secret string, scopes ...string) (string, error) {
 	tknReq := prime.TokenReq{
 		UserToken: "",
 		Scopes:    scopes,
@@ -145,7 +132,7 @@ func FetchToken(clnt *http.Client, secureUrl, clientId, secret string, scopes ..
 		return "", err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, secureUrl+"/token", bytes.NewBuffer(obj))
+	req, err := http.NewRequest(http.MethodPost, securityUrl+"/token", bytes.NewBuffer(obj))
 	req.SetBasicAuth(clientId, secret)
 
 	if err != nil {
@@ -202,7 +189,7 @@ func Whitelist(clnt *http.Client, secureUrl, name, secret string) ([]string, err
 //Exchange can be called by Clients and Resources to obtain information from token.
 //Clients use /info
 //Resources use /inspect
-func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens.Claimer, error) {
+func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens.Identity, error) {
 	insReq := prime.InspectReq{AccessCode: token}
 	obj, err := json.Marshal(insReq)
 	req, err := http.NewRequest(http.MethodPost, inspectUrl, bytes.NewBuffer(obj))
@@ -220,7 +207,7 @@ func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens
 
 	defer resp.Body.Close()
 
-	var clms tokens.Claims
+	var clms tokens.Identity
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&clms)
 

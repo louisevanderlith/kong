@@ -13,8 +13,7 @@ func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
 	scp, pass, ok := r.BasicAuth()
 
 	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(nil)
+		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 
@@ -23,27 +22,24 @@ func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
 	err := dec.Decode(&req)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		log.Println("Bind Error", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 
-	claims, err := secure.Author.Inspect(req.AccessCode, scp, pass)
+	claims, err := secure.Security.Inspect(req.AccessCode, scp, pass)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		log.Println("Inspect Error", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 
 	bits, err := json.Marshal(claims)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
+		log.Println("Marshal Error", err)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 

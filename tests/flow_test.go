@@ -1,7 +1,10 @@
 package tests
 
 import (
+	"github.com/louisevanderlith/kong/samples/servers/entity"
+	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"github.com/louisevanderlith/kong/tokens"
+	"log"
 	"testing"
 )
 
@@ -22,7 +25,7 @@ import (
 func TestFlow_User(t *testing.T) {
 	appId := "kong.viewr"
 	// Try to obtain token, should fail since we're requesting a user claim
-	_, err := authr.RequestToken(appId, "secret", "", "api.user.view")
+	_, err := secure.Security.RequestToken(appId, "secret", "", "api.user.view")
 
 	if err == nil {
 		t.Error("unexpected success, user should be required")
@@ -30,14 +33,14 @@ func TestFlow_User(t *testing.T) {
 	}
 
 	// Obtain Partial login Token
-	partClms, err := authr.Login(appId, "user@fake.com", "user1pass")
+	partClms, err := entity.Manager.Login(appId, "user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	partial, err := authr.Sign(partClms)
+	partial, err := entity.Manager.Sign(partClms, 5)
 
 	if err != nil {
 		t.Error(err)
@@ -45,36 +48,52 @@ func TestFlow_User(t *testing.T) {
 	}
 
 	// Apply Consent to Partial token
-	usrClms, err := authr.Consent(partial, tokens.KongProfile, tokens.KongClient, tokens.UserName, tokens.UserKey)
+	consent := map[string]bool{
+		tokens.UserName: true,
+		tokens.UserKey:  true,
+	}
+
+	usrClms, err := entity.Manager.Consent(partial, consent)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	ut, err := authr.Sign(usrClms)
+	ut, err := entity.Manager.Sign(usrClms, 5)
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	tkn, err := authr.RequestToken(appId, "secret", ut, "api.user.view")
+	tkn, err := secure.Security.RequestToken(appId, "secret", ut, "api.user.view")
 
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	if !tkn.HasClaim(tokens.UserName) {
+	if !tkn.HasUser() {
+		t.Error("user expected")
+		return
+	}
+
+	usrIdn, err := entity.Manager.FetchNeeds(tkn.GetUserToken())
+
+	if err != nil {
+		t.Error("Fetch Needs Error", err)
+		return
+	}
+	log.Println("TKN", usrIdn)
+	if !usrIdn.HasClaim(tokens.UserName) {
 		t.Error("token doesn't have 'UserName' claim")
 		return
 	}
 
-	act := tkn.GetClaim(tokens.UserName)
+	act := usrIdn.GetClaim(tokens.UserName)
 	exp := "User 1"
 	if act != exp {
 		t.Errorf("incorrect claim; want %s, got %s", exp, act)
-		return
 	}
 }

@@ -1,355 +1,142 @@
 package kong
 
 import (
-	"crypto/rand"
-	"errors"
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/stores"
-	"github.com/louisevanderlith/kong/tokens"
-	"io"
-	"time"
+	"net/http"
 )
 
-type Author interface {
-	RequestToken(id, secret, ut string, resources ...string) (tokens.Claimer, error)
-	Inspect(token, resource, secret string) (tokens.Claimer, error)
-	Info(token, secret string) (tokens.Claimer, error)           //local api
-	Login(id, username, password string) (tokens.Claimer, error) //partial token
-	Consent(ut string, claims ...string) (tokens.Claimer, error) //finalize token
-	Sign(token tokens.Claimer) (string, error)
-	QueryClient(partial string) (prime.ClientQuery, error)
-	GetStore() stores.AuthStore
+// Authority provides functions for the User interface of kong
+type Authority interface {
+	ClientQuery(request prime.QueryRequest) (string, map[string][]string, error)
+	GiveConsent(request prime.ConsentRequest) (string, error)
+	AuthenticateUser(request prime.LoginRequest) (string, error)
 }
 
 type authority struct {
-	Store stores.AuthStore
-	Users stores.UserStore
-	key   []byte //must be 32byte
+	clnt        *http.Client
+	tkn         string
+	securityUrl string
+	managerUrl  string
 }
 
-func CreateAuthority(store stores.AuthStore, users stores.UserStore) (Author, error) {
-	return authority{
-		Store: store,
-		Users: users,
-		key:   generateKey(32),
-	}, nil
+//NewAuthority returns a client which can call the Secure & Entity server's API
+func NewAuthority(client *http.Client, securityUrl, managerUrl, authTkn string) Authority {
+	return authority{clnt: client, tkn: authTkn, securityUrl: securityUrl, managerUrl: managerUrl}
 }
 
-func generateKey(len int) []byte {
-	k := make([]byte, len)
-	if _, err := io.ReadFull(rand.Reader, k); err != nil {
-		return nil
-	}
-
-	return k
-}
-
-func (a authority) GetStore() stores.AuthStore {
-	return a.Store
-}
-
-//Signs the claims
-func (a authority) Sign(claims tokens.Claimer) (string, error) {
-	return EncodeClaims(a.key, claims)
-}
-
-func (a authority) openClaims(token string) (tokens.Claimer, error) {
-	result, err := DecodeToken(a.key, token)
+//ClientQuery returns the username and the client's required claims
+func (a authority) ClientQuery(request prime.QueryRequest) (string, map[string][]string, error) {
+	bits, err := json.Marshal(request)
 
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
-	return result, nil
-}
-
-func (a authority) QueryClient(partial string) (prime.ClientQuery, error) {
-	clms, err := a.openClaims(partial)
+	req, err := http.NewRequest(http.MethodPost, a.securityUrl+"/query", bytes.NewBuffer(bits))
+	req.Header.Set("Authorization", "Bearer "+a.tkn)
 
 	if err != nil {
-		return prime.ClientQuery{}, err
+		return "", nil, err
 	}
 
-	if !clms.HasUser() {
-		return prime.ClientQuery{}, errors.New("no user found in token")
-	}
-
-	if clms.IsExpired() {
-		return prime.ClientQuery{}, errors.New("partial token expired")
-	}
-
-	_, username := clms.GetUserinfo()
-	_, clnt, err := a.Store.GetProfileClient(clms.GetId())
+	resp, err := a.clnt.Do(req)
 
 	if err != nil {
-		return prime.ClientQuery{}, err
+		return "", nil, err
 	}
 
-	result := prime.ClientQuery{
-		Username: username,
-		Consent:  make(map[string][]string),
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", nil, fmt.Errorf("%s", resp.Status)
 	}
 
-	for _, v := range clnt.AllowedResources {
-		rsrc, err := a.Store.GetResource(v)
+	qry := prime.ClientQuery{}
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&qry)
 
-		if err != nil {
-			return prime.ClientQuery{}, err
-		}
-
-		var concern []string
-
-		for _, n := range rsrc.Needs {
-			concern = append(concern, n)
-		}
-
-		result.Consent[rsrc.DisplayName] = concern
+	if err != nil {
+		return "", nil, err
 	}
 
-	return result, nil
+	return qry.Username, qry.Consent, nil
 }
 
-//GetCallback returns
-/*
-func (a authority) GetCallback(token tokens.Claimer) (string, error) {
-	if !token.IsExpired() {
-		return "", errors.New("token expired")
-	}
-
-	prof, clnt, err := a.getProfileClient(token)
+//GiveConsent returns a signed user token
+func (a authority) GiveConsent(request prime.ConsentRequest) (string, error) {
+	bits, err := json.Marshal(request)
 
 	if err != nil {
 		return "", err
 	}
 
-	sgnd, err := a.Sign(token)
+	req, err := http.NewRequest(http.MethodPost, a.securityUrl+"/consent", bytes.NewBuffer(bits))
+	req.Header.Set("Authorization", "Bearer "+a.tkn)
 
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf("https://%s.%s/callback?user=%s", strings.ToLower(clnt.Name), prof.Domain, sgnd), nil
-}*/
-
-//Login returns the Client's User Key Token after successful authentication
-func (a authority) Login(id, username, password string) (tokens.Claimer, error) {
-	result, err := tokens.StartClaims(id)
+	resp, err := a.clnt.Do(req)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	usrClaims, err := a.loginUser(username, password)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%s", resp.Status)
+	}
+
+	qry := ""
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&qry)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	result.AddClaims(usrClaims)
-
-	return result, nil
+	return qry, nil
 }
 
-//loginUser returns the User's Key Token after successful authentication
-func (a authority) loginUser(username, password string) (tokens.Claimer, error) {
-	id, usr := a.Users.GetUserByName(username)
-
-	if usr == nil {
-		return nil, errors.New("invalid user")
-	}
-
-	if !usr.VerifyPassword(password) {
-		return nil, errors.New("invalid user")
-	}
-
-	result := make(tokens.Claims)
-
-	result.AddClaim(tokens.UserName, usr.GetName())
-	result.AddClaim(tokens.UserKey, id)
-
-	return result, nil
-}
-
-//Consent applies the claim values of allowed scopes, and finalises login
-func (a authority) Consent(usrtkn string, claims ...string) (tokens.Claimer, error) {
-	if len(claims) == 0 {
-		return nil, errors.New("no consented claims")
-	}
-
-	ut, err := a.openClaims(usrtkn)
+//AuthenticateUser returns a signed partial user token
+func (a authority) AuthenticateUser(request prime.LoginRequest) (string, error) {
+	bits, err := json.Marshal(request)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	for _, v := range claims {
-		ut.AddClaim(v, "")
-	}
-
-	ut.AddClaim(tokens.KongIssued, time.Now())
-	ut.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5))
-
-	return ut, nil
-}
-
-//RequestToken will return an Encoded token on success
-//id: clientId
-//secret: clientSecret
-//ut: pre-authenticated user token
-//scopes: resources used by the requesting page.
-func (a authority) RequestToken(id, secret, usrtkn string, resources ...string) (tokens.Claimer, error) {
-	result, err := tokens.StartClaims(id)
+	req, err := http.NewRequest(http.MethodPost, a.securityUrl+"/login", bytes.NewBuffer(bits))
+	req.Header.Set("Authorization", "Bearer "+a.tkn)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	prof, clnt, err := a.getProfileClient(result)
+	resp, err := a.clnt.Do(req)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	if !clnt.VerifySecret(secret) {
-		return nil, errors.New("client unauthorized")
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("%s", resp.Status)
 	}
 
-	result.AddClaim(tokens.KongIssued, time.Now())
-	result.AddClaim(tokens.KongExpired, time.Now().Add(time.Minute*5))
-
-	//Get Client needs from Profile
-	result.AddClaims(clnt.ExtractNeeds(prof))
-
-	usr, ut, err := a.getUserToken(usrtkn)
+	qry := ""
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&qry)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	for _, rsrc := range resources {
-		if !clnt.ResourceAllowed(rsrc) {
-			return nil, errors.New("scope not allowed")
-		}
-
-		resrc, err := a.Store.GetResource(rsrc)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if usr != nil && !usr.ResourceAllowed(rsrc) {
-			return nil, errors.New("scope not allowed")
-		}
-
-		vals, err := resrc.AssignNeeds(ut)
-
-		if err != nil {
-			return nil, err
-		}
-
-		result.AddClaims(vals)
-	}
-
-	return result, nil
-}
-
-func (a authority) getUserToken(usrtkn string) (prime.Userer, tokens.Claimer, error) {
-	if len(usrtkn) == 0 {
-		return nil, nil, nil
-	}
-
-	ut, err := a.openClaims(usrtkn)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if ut.IsExpired() {
-		return nil, nil, errors.New("token expired")
-	}
-
-	k, _ := ut.GetUserinfo()
-	usr := a.Users.GetUser(k)
-
-	return usr, ut, nil
-}
-
-//Info returns token information to the client
-func (a authority) Info(token, secret string) (tokens.Claimer, error) {
-	clms, err := a.openClaims(token)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if clms.IsExpired() {
-		return nil, errors.New("token expired")
-	}
-
-	_, clnt, err := a.getProfileClient(clms)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !clnt.VerifySecret(secret) {
-		return nil, errors.New("invalid client")
-	}
-
-	return clms, nil
-}
-
-//Inspect returns the resources requested token information to the resource
-func (a authority) Inspect(token, resource, secret string) (tokens.Claimer, error) {
-	resrc, err := a.Store.GetResource(resource)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !resrc.VerifySecret(secret) {
-		return nil, errors.New("invalid secret")
-	}
-
-	clms, err := a.openClaims(token)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if clms.IsExpired() {
-		return nil, errors.New("token expired")
-	}
-
-	return resrc.ExtractNeeds(clms)
-}
-
-func (a authority) Whitelist(resource, secret string) ([]string, error) {
-	resrc, err := a.Store.GetResource(resource)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if !resrc.VerifySecret(secret) {
-		return nil, errors.New("invalid secret")
-	}
-
-	return a.Store.GetWhitelist(), nil
-}
-
-func (a authority) getProfileClient(clms tokens.Claimer) (prime.Profile, prime.Client, error) {
-	prof, err := a.Store.GetProfile(clms.GetProfile())
-
-	if err != nil {
-		return prime.Profile{}, prime.Client{}, err
-	}
-
-	clnt, err := prof.GetClient(clms.GetClient())
-
-	if err != nil {
-		return prime.Profile{}, prime.Client{}, err
-	}
-
-	return prof, clnt, nil
+	return qry, nil
 }

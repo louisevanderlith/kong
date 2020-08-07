@@ -1,10 +1,10 @@
 # kong
-Rolling claims builder
+Rolling claims builder, which uses short-lived tokens to perform authorization.
 
-# Profile - Is the main configuration for a domain
-# Clients - are applications that use resources
-# Resources - are information scopes
-# Claims - are fields requested by scopes
+Kong uses 3 services to complete Client and User authentication;
+## Security (Profile & Client Authentication)
+## Manager (User Authentication & Registration)
+## Authority (UI Client which delegates calls to Security & Entity Services)
 
 # Typical Application Flow (Web Client)
 *   Request Token
