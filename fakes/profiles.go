@@ -20,9 +20,9 @@ func NewFakeProfiles() []prime.Profile {
 			ImageKey: husk.CrazyKey(),
 			Clients: []prime.Client{
 				{
-					Name:   "viewr",
-					Secret: "$2a$11$JWcHYGC7K2zY4NGOD/n5puq7w8zij3GVoU9BD1j6xDtHHqFdLcV6S",
-					Url:    "http://localhost:80",
+					Name:         "viewr",
+					Secret:       "$2a$11$JWcHYGC7K2zY4NGOD/n5puq7w8zij3GVoU9BD1j6xDtHHqFdLcV6S",
+					Url:          "http://localhost:80",
 					TermsEnabled: true,
 					CodesEnabled: true,
 					AllowedResources: []string{
@@ -34,12 +34,13 @@ func NewFakeProfiles() []prime.Profile {
 					Secret: "$2a$11$JWcHYGC7K2zY4NGOD/n5puq7w8zij3GVoU9BD1j6xDtHHqFdLcV6S",
 					Url:    "http://localhost:8094",
 					AllowedResources: []string{
-						"kong.consent.apply",
-						"kong.login.apply"},
+						"entity.consent.apply",
+						"entity.login.apply"},
 				},
 			},
 			Endpoints: prime.Map{
 				{"api", "https://api.kong"},
+				{"entity", "https://entity.kong"},
 			},
 			Codes: prime.Map{
 				{"gtag", "000000-00"},

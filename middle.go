@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/louisevanderlith/kong/prime"
@@ -46,15 +47,22 @@ func ClientMiddleware(clnt *http.Client, name, secret, securityUrl, authorityUrl
 		tkn, err := FetchToken(clnt, securityUrl, name, secret, scopes...)
 
 		if err != nil {
-			log.Println("Fetch Token Error", err)
-			if err.Error() == "user login required" {
+			status, err := strconv.Atoi(err.Error())
+
+			if err != nil {
+				log.Println("Atoi Error", err)
+				http.Error(w, "", http.StatusInternalServerError)
+				return
+			}
+
+			if status == http.StatusUnprocessableEntity {
 				cbUrl := fmt.Sprintf("https://%s/callback", r.Host)
 				consntUrl := fmt.Sprintf("%s/consent?client=%s&callback=%s", authorityUrl, name, cbUrl)
 				http.Redirect(w, r, consntUrl, http.StatusTemporaryRedirect)
 				return
 			}
 
-			http.Error(w, "", http.StatusInternalServerError)
+			http.Error(w, "", status)
 			return
 		}
 
@@ -74,7 +82,7 @@ func ClientMiddleware(clnt *http.Client, name, secret, securityUrl, authorityUrl
 	}
 }
 
-func ResourceMiddleware(name, secret, securityUrl string, handle http.HandlerFunc) http.HandlerFunc {
+func ResourceMiddleware(clnt *http.Client, name, secret, securityUrl string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, err := GetBearerToken(r)
 
@@ -84,7 +92,7 @@ func ResourceMiddleware(name, secret, securityUrl string, handle http.HandlerFun
 			return
 		}
 
-		claims, err := Exchange(http.DefaultClient, token, name, secret, securityUrl+"/inspect")
+		claims, err := Exchange(clnt, token, name, secret, securityUrl+"/inspect")
 
 		if err != nil {
 			log.Println("Exchange Error", err)
@@ -121,6 +129,7 @@ func GetBearerToken(r *http.Request) (string, error) {
 	return token, nil
 }
 
+//FetchToken calls the Security Token endpoint to obtain a Client Token
 func FetchToken(clnt *http.Client, securityUrl, clientId, secret string, scopes ...string) (string, error) {
 	tknReq := prime.TokenReq{
 		UserToken: "",
@@ -159,8 +168,9 @@ func FetchToken(clnt *http.Client, securityUrl, clientId, secret string, scopes 
 	return string(body), nil
 }
 
-func Whitelist(clnt *http.Client, secureUrl, name, secret string) ([]string, error) {
-	req, err := http.NewRequest(http.MethodGet, secureUrl+"/whitelist", nil)
+//Whitelist calls the Security whitelist endpoint to obtain a list of allowed Clients
+func Whitelist(clnt *http.Client, securityUrl, name, secret string) ([]string, error) {
+	req, err := http.NewRequest(http.MethodGet, securityUrl+"/whitelist", nil)
 	req.SetBasicAuth(name, secret)
 
 	if err != nil {
@@ -186,10 +196,11 @@ func Whitelist(clnt *http.Client, secureUrl, name, secret string) ([]string, err
 	return wht, nil
 }
 
-//Exchange can be called by Clients and Resources to obtain information from token.
+//Exchange can be called by Clients, Resources & Users to obtain information from tokens.
 //Clients use /info
 //Resources use /inspect
-func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens.Identity, error) {
+//Users use /needs
+func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens.Claims, error) {
 	insReq := prime.InspectReq{AccessCode: token}
 	obj, err := json.Marshal(insReq)
 	req, err := http.NewRequest(http.MethodPost, inspectUrl, bytes.NewBuffer(obj))
@@ -207,7 +218,7 @@ func Exchange(clnt *http.Client, token, name, secret, inspectUrl string) (tokens
 
 	defer resp.Body.Close()
 
-	var clms tokens.Identity
+	clms := tokens.EmptyClaims()
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&clms)
 

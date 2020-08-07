@@ -38,6 +38,26 @@ func TestSecurity_RequestToken_HasClient(t *testing.T) {
 	}
 }
 
+func TestSecurity_RequestToken_HasEndpoints(t *testing.T) {
+	rname := "api.profile.view"
+	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", rname)
+
+	if err != nil {
+		t.Error("Request Token Error", err)
+		return
+	}
+
+	url, err := tkn.GetResourceURL("api.profile.view")
+
+	if err != nil {
+		t.Error("Get Resource URL Error", err)
+	}
+
+	if url != "https://api.kong" {
+		t.Error("incorrect endpoint", url)
+	}
+}
+
 //TestAuthority_RequestToken_ProfileInfo_HasAllClaims Tests that all claims for a scope is included
 func TestSecurity_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 	rname := "api.profile.view"

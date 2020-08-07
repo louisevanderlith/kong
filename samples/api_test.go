@@ -2,6 +2,7 @@ package samples
 
 import (
 	"github.com/louisevanderlith/kong/samples/handlers/api"
+	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,13 +11,21 @@ import (
 )
 
 func TestResource_Middleware_SetContext(t *testing.T) {
-	token := "JBvuOLviaslia2pU2kHrcmCcSSUlrcl8dehYk3QvF7PSl1YpeY7Lice62zIDyhhcU0Iw+5x7aQCN/RC/Q4HWNooqe2AqSIzihv3UixUFW5XIA99bDpvleLvDL0/33zKDZzMTA+ihs/9SHAIwlCgBRrnY/DT8HLrFUftQGMZyQUUeBkSqjsntcRwIQ82iy3uZ68dc5tafO36NHdu7SJxwmIAGmjWZ3fPb6+Auk/4l1gvNYreeuITmYawUovQHJjhU7+eKY4OKJILINxCDFpT2W+hS4PFYDoQYgD762DPxA2sU80idpl9n2WmGVwvzGxfYPcvcbbJj10UaDIAHywEC"
+	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	defer ts.Close()
+
+	token, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
+
+	if err != nil {
+		t.Fatal("Obtain Token Error", err)
+		return
+	}
 
 	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	handle := kong.ResourceMiddleware("api.profile.view", "secret", "https://localhost:000", api.HandleProfileGET)
+	handle := kong.ResourceMiddleware(ts.Client(), "api.profile.view", "secret", ts.URL, api.HandleProfileGET)
 	handle(rr, req)
 
 	if rr.Code != http.StatusOK {
