@@ -10,6 +10,7 @@ import (
 	"time"
 )
 
+//Security controls Client and Resource authentication
 type Security interface {
 	tokens.Signer
 	RequestToken(id, secret, ut string, resources ...string) (tokens.Identity, error)
@@ -47,9 +48,6 @@ func (s security) QueryClient(partial string) (prime.ClientQuery, error) {
 		return prime.ClientQuery{}, errors.New("partial token expired")
 	}
 
-	//usr := idn.GetUserIdentity()
-
-	//username := usr.GetDisplayName()
 	_, clnt, err := s.Store.GetProfileClient(idn.GetID())
 
 	if err != nil {

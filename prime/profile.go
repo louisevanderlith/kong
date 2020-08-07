@@ -52,7 +52,7 @@ func (p Profile) GetClientClaims(c Client) tokens.Claims {
 	result.AddClaim(tokens.KongContacts, p.Contacts)
 
 	if len(c.AllowedResources) > 0 {
-		ends := make(map[string]string)
+		ends := make(map[string]interface{})
 		for _, r := range c.AllowedResources {
 			parts := strings.Split(r, ".")
 

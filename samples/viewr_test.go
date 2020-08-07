@@ -11,6 +11,8 @@ import (
 
 func TestHandleIndexGET_LoginRequired(t *testing.T) {
 	authS := httptest.NewServer(GetAuthRoutes())
+	defer authS.Close()
+
 	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
@@ -19,7 +21,7 @@ func TestHandleIndexGET_LoginRequired(t *testing.T) {
 	handl := kong.ClientMiddleware(ts.Client(), "kong.viewr", "secret", ts.URL, authS.URL, viewr.HandleIndexGET, "api.user.view")
 	handl(rr, req)
 
-	if rr.Code != http.StatusOK {
+	if rr.Code != http.StatusTemporaryRedirect {
 		t.Fatal(rr.Code, rr.Body.String())
 	}
 }

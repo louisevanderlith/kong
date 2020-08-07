@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-// Authority provides functions for the User interface of kong
+// Authority provides functions for connecting Security & User Manager functions
 type Authority interface {
 	ClientQuery(request prime.QueryRequest) (string, map[string][]string, error)
 	GiveConsent(request prime.ConsentRequest) (string, error)
@@ -73,7 +73,7 @@ func (a authority) GiveConsent(request prime.ConsentRequest) (string, error) {
 		return "", err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, a.securityUrl+"/consent", bytes.NewBuffer(bits))
+	req, err := http.NewRequest(http.MethodPost, a.managerUrl+"/consent", bytes.NewBuffer(bits))
 	req.Header.Set("Authorization", "Bearer "+a.tkn)
 
 	if err != nil {
@@ -111,7 +111,7 @@ func (a authority) AuthenticateUser(request prime.LoginRequest) (string, error) 
 		return "", err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, a.securityUrl+"/login", bytes.NewBuffer(bits))
+	req, err := http.NewRequest(http.MethodPost, a.managerUrl+"/login", bytes.NewBuffer(bits))
 	req.Header.Set("Authorization", "Bearer "+a.tkn)
 
 	if err != nil {

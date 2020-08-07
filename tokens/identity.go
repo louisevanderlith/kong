@@ -69,8 +69,8 @@ func (c *identity) GetResourceURL(name string) (string, error) {
 		return "", errors.New("kong.endpoints claim not found")
 	}
 
-	servIdx := strings.Index(name, ".")
 	ends := endsClms.(map[string]interface{})
+	servIdx := strings.Index(name, ".")
 	url, ok := ends[name[:servIdx]]
 
 	if !ok {

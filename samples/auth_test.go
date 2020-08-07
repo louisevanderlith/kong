@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
+	"io/ioutil"
 	http "net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
@@ -13,13 +14,13 @@ import (
 )
 
 // Auth is the UI for Authentication
-
 func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, password string) (string, error) {
 	insReq := prime.LoginRequest{
 		Client:   clientId,
 		Username: username,
 		Password: password,
 	}
+
 	obj, err := json.Marshal(insReq)
 
 	if err != nil {
@@ -52,32 +53,33 @@ func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, pass
 		return "", fmt.Errorf("%s", resp.Status)
 	}
 
-	clms := make(map[string]string)
-	dec := json.NewDecoder(resp.Body)
-	err = dec.Decode(&clms)
+	bits, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
 		return "", err
 	}
 
-	return "nothing", nil
+	return string(bits), nil
 }
 
 func TestHandleLoginPOST(t *testing.T) {
 	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
-	tkn, err := ObtainToken(ts, "kong.auth", "secret", "kong.login.apply", "kong.consent.apply")
+	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
+	defer tm.Close()
+
+	tkn, err := ObtainToken(ts, "kong.auth", "secret", "entity.login.apply", "entity.consent.apply")
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Obtain Token Error", err)
 		return
 	}
 
-	ut, err := ObtainUserLogin(ts, tkn, "kong.viewr", "user@fake.com", "user1pass")
+	ut, err := ObtainUserLogin(tm, tkn, "kong.auth", "user@fake.com", "user1pass")
 
 	if err != nil {
-		t.Error(err)
+		t.Error("Obtain Login Error", err)
 		return
 	}
 
@@ -85,42 +87,3 @@ func TestHandleLoginPOST(t *testing.T) {
 		t.Error("user token is empty")
 	}
 }
-
-/*
-func TestHandleConsentGET_NotAuthenticated(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/consent", nil)
-	rr := httptest.NewRecorder()
-	controllers.HandleConsentGET(rr, req)
-
-	resp := rr.Result()
-	url, err := resp.Location()
-
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-
-	if url.Path != "/login" {
-		t.Errorf("invalid url %s", url)
-		return
-	}
-
-	if rr.Code != http.StatusFound {
-		t.Fatal(rr.Code, rr.Body.String())
-		return
-	}
-}
-
-func TestHandleLoginGET(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/login", nil)
-	rr := httptest.NewRecorder()
-	GetAuthRoutes(server.Author).ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusOK {
-		t.Fatal(rr.Code, rr.Body.String())
-		return
-	}
-
-	log.Println(rr.Body.String())
-}
-*/

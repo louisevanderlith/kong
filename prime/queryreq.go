@@ -1,5 +1,6 @@
 package prime
 
+//
 type QueryRequest struct {
 	Partial string
 }

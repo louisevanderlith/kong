@@ -58,7 +58,7 @@ func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	enc, err := secure.Security.Sign(ut, 5)
+	enc, err := entity.Manager.Sign(ut, 5)
 
 	if err != nil {
 		log.Println(err)

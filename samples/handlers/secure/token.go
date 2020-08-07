@@ -29,7 +29,8 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 	tkn, err := secure.Security.RequestToken(clnt, pass, req.UserToken, req.Scopes...)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println("Request Token Error", err)
+		http.Error(w, "", http.StatusUnprocessableEntity)
 		return
 	}
 

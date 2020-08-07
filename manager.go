@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+//Manager controls User authentication
 type Manager interface {
 	tokens.Signer
 	Login(id, username, password string) (tokens.UserIdentity, error) //partial token

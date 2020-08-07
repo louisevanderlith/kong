@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/servers/entity"
-	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"log"
 	"net/http"
 )
@@ -29,7 +28,7 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stkn, err := secure.Security.Sign(tkn, 5)
+	stkn, err := entity.Manager.Sign(tkn, 5)
 
 	if err != nil {
 		log.Println("Sign Error", err)

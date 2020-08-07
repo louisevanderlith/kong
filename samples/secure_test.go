@@ -48,6 +48,10 @@ func ObtainToken(srvr *httptest.Server, clientId, secret string, scopes ...strin
 		return "", errors.New("no response")
 	}
 
+	if resp.StatusCode == http.StatusUnprocessableEntity {
+		return "", errors.New("user login required")
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return "", errors.New(strings.Replace(string(body), "\n", "", 1))
 	}
@@ -55,7 +59,7 @@ func ObtainToken(srvr *httptest.Server, clientId, secret string, scopes ...strin
 	return string(body), nil
 }
 
-func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (map[string]string, error) {
+func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (tokens.Claims, error) {
 	insReq := prime.InspectReq{AccessCode: token}
 	obj, err := json.Marshal(insReq)
 
@@ -82,7 +86,7 @@ func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (ma
 		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
-	clms := make(map[string]string)
+	clms := tokens.EmptyClaims()
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&clms)
 
@@ -145,12 +149,13 @@ func TestHandleTokenPOST_UserRequired(t *testing.T) {
 	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.user.view")
+
 	if err == nil {
 		t.Error("expecting error")
 		return
 	}
 
-	if err.Error() != "invalid user token" {
+	if err.Error() != "user login required" {
 		t.Error("ERROR", err)
 		return
 	}
@@ -163,19 +168,20 @@ func TestHandleInspectPOST(t *testing.T) {
 	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Obtain Token Error", err)
 		return
 	}
 
 	clms, err := ObtainInspection(ts, tkn, "api.profile.view", "secret")
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Obtain Inspection Error", err)
 		return
 	}
 
-	if clms[tokens.KongProfile] != "kong" {
-		t.Error("unexpected claim value", clms[tokens.KongProfile])
+	act := clms.GetClaimString(tokens.KongProfile)
+	if act != "kong" {
+		t.Error("unexpected claim value", act)
 	}
 }
 
