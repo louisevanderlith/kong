@@ -2,9 +2,7 @@ package prime
 
 import (
 	"github.com/louisevanderlith/husk"
-	"github.com/louisevanderlith/kong/tokens"
 	"golang.org/x/crypto/bcrypt"
-	"strings"
 )
 
 type Client struct {
@@ -49,49 +47,4 @@ func (c Client) ResourceAllowed(resource string) bool {
 func (c Client) VerifySecret(secret string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(c.Secret), []byte(secret))
 	return err == nil
-}
-
-func (c Client) ExtractNeeds(p Profile) tokens.Claimer {
-	result := make(tokens.Claims)
-
-	v, _ := p.ProvideClaim(tokens.KongTerms)
-	result.AddClaim(tokens.KongLogo, v)
-
-	if c.TermsEnabled {
-		v, _ := p.ProvideClaim(tokens.KongTerms)
-		result.AddClaim(tokens.KongTerms, v)
-	}
-
-	if c.CodesEnabled {
-		v, _ := p.ProvideClaim(tokens.KongCodes)
-		result.AddClaim(tokens.KongCodes, v)
-	}
-
-	result.AddClaim(tokens.KongContacts, p.Contacts)
-
-	if len(c.AllowedResources) > 0 {
-		ends := make(map[string]string)
-		for _, r := range c.AllowedResources {
-			parts := strings.Split(r, ".")
-
-			if len(parts) < 2 {
-				continue
-			}
-
-			api := parts[0]
-			if api == "kong" {
-				continue
-			}
-
-			v := p.Endpoints.Get(api)
-
-			if len(v) > 0 {
-				ends[api] = v
-			}
-		}
-
-		result.AddClaim(tokens.KongEndpoints, ends)
-	}
-
-	return result
 }

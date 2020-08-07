@@ -11,27 +11,23 @@ func WhitelistGET(w http.ResponseWriter, r *http.Request) {
 	api, pass, ok := r.BasicAuth()
 
 	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(nil)
+		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 
-	rsrc, err := secure.Author.GetStore().GetResource(api)
+	lst, err := secure.Security.Whitelist(api, pass)
 
-	if !rsrc.VerifySecret(pass) {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(nil)
+	if err != nil {
+		log.Println("Whitelist Error", err)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
-
-	lst := secure.Author.GetStore().GetWhitelist()
 
 	bits, err := json.Marshal(lst)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
+		log.Println("Marshal Error", err)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 

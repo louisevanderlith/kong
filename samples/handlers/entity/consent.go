@@ -1,8 +1,9 @@
-package secure
+package entity
 
 import (
 	"encoding/json"
 	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/samples/servers/entity"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"log"
 	"net/http"
@@ -15,24 +16,23 @@ func HandleClientQueryPOST(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&obj)
 
 	if err != nil {
-		log.Println(err)
+		log.Println("Bind Error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	res, err := secure.Author.QueryClient(obj.Partial)
+	res, err := secure.Security.QueryClient(obj.Partial)
 
 	if err != nil {
-		log.Println(err)
+		log.Println("Query Client Error", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	bits, err := json.Marshal(res)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
+		log.Println("Marshal Error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -51,14 +51,14 @@ func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ut, err := secure.Author.Consent(obj.User, obj.Claims...)
+	ut, err := entity.Manager.Consent(obj.UserToken, obj.Claims)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	enc, err := secure.Author.Sign(ut)
+	enc, err := secure.Security.Sign(ut, 5)
 
 	if err != nil {
 		log.Println(err)

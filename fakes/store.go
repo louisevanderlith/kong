@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func NewFakeStore() stores.AuthStore {
+func NewFakeStore() stores.SecureStore {
 	return fakeStore{
 		Profiles:  NewFakeProfiles(),
 		Resources: NewFakeResources(),
@@ -20,12 +20,17 @@ type fakeStore struct {
 	Resources []prime.Resource
 }
 
-func (s fakeStore) GetWhitelist() []string {
+//GetWhitelist returns the Urls of Clients which use the specified resource
+func (s fakeStore) GetWhitelist(prefix string) []string {
 	var result []string
 
 	for _, v := range s.Profiles {
 		for _, c := range v.Clients {
-			result = append(result, c.Url)
+			for _, r := range c.AllowedResources {
+				if strings.HasPrefix(r, prefix) {
+					result = append(result, c.Url)
+				}
+			}
 		}
 	}
 

@@ -9,10 +9,10 @@ import (
 
 var (
 	SessionStore sessions.Store
-	Security     kong.Securer
+	Authority     kong.Authority
 )
 
-func SetupAuthServer(clnt *http.Client, authURL, tokn string) {
+func SetupAuthServer(clnt *http.Client, securityUrl, managerUrl, token string) {
 	stor := sessions.NewCookieStore(
 		securecookie.GenerateRandomKey(64),
 		securecookie.GenerateRandomKey(32),
@@ -22,5 +22,5 @@ func SetupAuthServer(clnt *http.Client, authURL, tokn string) {
 	stor.Options.HttpOnly = true
 
 	SessionStore = stor
-	Security = kong.NewSecurity(clnt, authURL, tokn)
+	Authority = kong.NewAuthority(clnt, securityUrl, managerUrl, token)
 }

@@ -28,21 +28,19 @@ func HandleInfoPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, err := secure.Author.Info(req.AccessCode, pass)
+	claims, err := secure.Security.Info(req.AccessCode, pass)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		log.Println("Info Error", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 
 	bits, err := json.Marshal(claims)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
+		log.Println("Marshal Error", err)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 

@@ -93,7 +93,7 @@ func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (ma
 	return clms, nil
 }
 
-func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (map[string]string, error) {
+func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (tokens.Claims, error) {
 	insReq := prime.InspectReq{AccessCode: token}
 	obj, err := json.Marshal(insReq)
 
@@ -120,7 +120,7 @@ func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (map[stri
 		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
-	clms := make(map[string]string)
+	clms := tokens.EmptyClaims()
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&clms)
 
@@ -132,7 +132,7 @@ func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (map[stri
 }
 
 func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 	if err != nil {
@@ -142,7 +142,7 @@ func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
 }
 
 func TestHandleTokenPOST_UserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.user.view")
 	if err == nil {
@@ -150,14 +150,14 @@ func TestHandleTokenPOST_UserRequired(t *testing.T) {
 		return
 	}
 
-	if err.Error() != "user login required" {
+	if err.Error() != "invalid user token" {
 		t.Error("ERROR", err)
 		return
 	}
 }
 
 func TestHandleInspectPOST(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
@@ -180,24 +180,26 @@ func TestHandleInspectPOST(t *testing.T) {
 }
 
 func TestHandleInfoPOST(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Author))
+	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Obtain Token Error", err)
 		return
 	}
 
 	clms, err := ObtainInfo(ts, tkn, "kong.viewr", "secret")
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("Obtain Info Error", err)
 		return
 	}
+
 	t.Log(clms)
-	if clms["kong.profile"] != "kong" {
-		t.Error("unexpected claim value", clms["kong.profile"])
+	act := clms.GetClaimString(tokens.KongProfile)
+	if act != "kong" {
+		t.Error("unexpected claim value", act)
 	}
 }

@@ -1,6 +1,6 @@
 package prime
 
 type ConsentRequest struct {
-	User   string
-	Claims []string
+	UserToken   string
+	Claims map[string]bool
 }

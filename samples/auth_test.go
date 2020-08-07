@@ -64,7 +64,7 @@ func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, pass
 }
 
 func TestHandleLoginPOST(t *testing.T) {
-	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Author))
+	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, "kong.auth", "secret", "kong.login.apply", "kong.consent.apply")

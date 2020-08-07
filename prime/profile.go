@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/louisevanderlith/husk"
 	"github.com/louisevanderlith/kong/tokens"
+	"strings"
 )
 
 type Profile struct {
@@ -30,6 +31,51 @@ func (p Profile) GetClient(id string) (Client, error) {
 	}
 
 	return Client{}, errors.New("no such client")
+}
+
+func (p Profile) GetClientClaims(c Client) tokens.Claims {
+	result := tokens.EmptyClaims()
+
+	v, _ := p.ProvideClaim(tokens.KongLogo)
+	result.AddClaim(tokens.KongLogo, v)
+
+	if c.TermsEnabled {
+		v, _ := p.ProvideClaim(tokens.KongTerms)
+		result.AddClaim(tokens.KongTerms, v)
+	}
+
+	if c.CodesEnabled {
+		v, _ := p.ProvideClaim(tokens.KongCodes)
+		result.AddClaim(tokens.KongCodes, v)
+	}
+
+	result.AddClaim(tokens.KongContacts, p.Contacts)
+
+	if len(c.AllowedResources) > 0 {
+		ends := make(map[string]string)
+		for _, r := range c.AllowedResources {
+			parts := strings.Split(r, ".")
+
+			if len(parts) < 2 {
+				continue
+			}
+
+			api := parts[0]
+			if api == "kong" {
+				continue
+			}
+
+			v := p.Endpoints.Get(api)
+
+			if len(v) > 0 {
+				ends[api] = v
+			}
+		}
+
+		result.AddClaim(tokens.KongEndpoints, ends)
+	}
+
+	return result
 }
 
 func (p Profile) ProvideClaim(claim string) (interface{}, error) {

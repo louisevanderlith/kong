@@ -1,8 +1,9 @@
-package secure
+package entity
 
 import (
 	"encoding/json"
 	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/samples/servers/entity"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"log"
 	"net/http"
@@ -15,27 +16,24 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&obj)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		log.Println("Bind Error", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 
-	tkn, err := secure.Author.Login(obj.Client, obj.Username, obj.Password)
+	tkn, err := entity.Manager.Login(obj.Client, obj.Username, obj.Password)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		log.Println("Login Error", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 
-	stkn, err := secure.Author.Sign(tkn)
+	stkn, err := secure.Security.Sign(tkn, 5)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		log.Println("Sign Error", err)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 

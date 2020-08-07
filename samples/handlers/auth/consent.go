@@ -28,26 +28,17 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req := prime.QueryRequest{Partial: ut.(string)}
-
-	user, concern, err := auth.Security.ClientQuery(req)
+	user, concern, err := auth.Authority.ClientQuery(req)
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
+		log.Println("Client Query Error", err)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
 	items := strings.Builder{}
 
 	for k, v := range concern {
-
-		if err != nil {
-			log.Println(err)
-			http.Error(w, "", http.StatusInternalServerError)
-			return
-		}
-
 		parnt := fmt.Sprintf("<li>%s<ul>", k)
 		items.WriteString(parnt)
 
@@ -107,14 +98,14 @@ func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 	}
 
 	obj := prime.ConsentRequest{
-		User:   ut.(string),
-		Claims: r.Form["consent"],
+		UserToken:   ut.(string),
+		Claims: nil,
 	}
 
-	tkn, err := auth.Security.GiveConsent(obj)
+	tkn, err := auth.Authority.GiveConsent(obj)
 
 	if err != nil {
-		log.Println(err)
+		log.Println("Give Consent Error", err)
 		//Show consent again
 		return
 	}

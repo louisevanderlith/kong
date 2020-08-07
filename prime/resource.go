@@ -1,11 +1,8 @@
 package prime
 
 import (
-	"errors"
 	"github.com/louisevanderlith/husk"
-	"github.com/louisevanderlith/kong/tokens"
 	"golang.org/x/crypto/bcrypt"
-	"strings"
 )
 
 type Resource struct {
@@ -38,6 +35,7 @@ func (r Resource) VerifySecret(secret string) bool {
 	return err == nil
 }
 
+/*
 func (r Resource) ExtractNeeds(claims tokens.Claimer) (tokens.Claimer, error) {
 	result := claims.GetKong()
 
@@ -50,8 +48,8 @@ func (r Resource) ExtractNeeds(claims tokens.Claimer) (tokens.Claimer, error) {
 	return result, nil
 }
 
-func (r Resource) AssignNeeds(usrtkn tokens.Claimer) (tokens.Claimer, error) {
-	result := make(tokens.Claims)
+func (r Resource) AssignNeeds(usrtkn tokens.UserIdentity) (tokens.Claimer, error) {
+	result := NewI make(tokens.Claims)
 
 	for _, v := range r.Needs {
 		parts := strings.Split(v, ".")
@@ -89,3 +87,4 @@ func (r Resource) AssignNeeds(usrtkn tokens.Claimer) (tokens.Claimer, error) {
 
 	return result, nil
 }
+*/

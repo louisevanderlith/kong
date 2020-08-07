@@ -34,7 +34,7 @@ func HandleLoginPOST(w http.ResponseWriter, r *http.Request) {
 		Password: r.FormValue("password"),
 	}
 
-	part, err := auth.Security.AuthenticateUser(obj)
+	part, err := auth.Authority.AuthenticateUser(obj)
 
 	if err != nil {
 		log.Println(err)
