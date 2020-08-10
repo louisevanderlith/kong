@@ -20,6 +20,10 @@ const (
 
 type userIdentity = claims
 
+func EmptyUserIdentity() UserIdentity {
+	return &userIdentity{make(map[string]interface{})}
+}
+
 func NewUserIdentity(k, name string) UserIdentity {
 	result := &userIdentity{make(map[string]interface{})}
 

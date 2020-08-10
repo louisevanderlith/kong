@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
+func HandleInsightPost(w http.ResponseWriter, r *http.Request) {
 	obj := prime.QueryRequest{}
 	decoder := json.NewDecoder(r.Body)
 
@@ -20,28 +20,18 @@ func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ut, err := entity.Manager.Consent(obj.Token, obj.Claims)
+	ut, err := entity.Manager.Insight(obj)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	enc, err := entity.Manager.Sign(ut, 5)
+	bits, err := json.Marshal(ut)
 
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
-		return
-	}
-
-	bits, err := json.Marshal(enc)
-
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 

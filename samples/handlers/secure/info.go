@@ -8,27 +8,26 @@ import (
 	"net/http"
 )
 
+//ClientInsight
 func HandleInfoPOST(w http.ResponseWriter, r *http.Request) {
 	_, pass, ok := r.BasicAuth()
 
 	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(nil)
+		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 
 	dec := json.NewDecoder(r.Body)
-	req := prime.InspectReq{}
+	req := prime.QueryRequest{}
 	err := dec.Decode(&req)
 
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(nil)
+		http.Error(w, "", http.StatusBadRequest)
 		return
 	}
 
-	claims, err := secure.Security.Info(req.AccessCode, pass)
+	claims, err := secure.Security.ClientInsight(req.Token, pass)
 
 	if err != nil {
 		log.Println("Info Error", err)

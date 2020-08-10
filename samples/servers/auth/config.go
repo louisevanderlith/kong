@@ -9,7 +9,7 @@ import (
 
 var (
 	SessionStore sessions.Store
-	Authority     kong.Authority
+	Authority    kong.Authority
 )
 
 func SetupAuthServer(clnt *http.Client, securityUrl, managerUrl, token string) {

@@ -21,6 +21,10 @@ type Identity interface {
 	GetTerm(name string) (string, error)
 }
 
+func EmptyIdentity() Identity {
+	return &identity{make(map[string]interface{})}
+}
+
 func NewIdentity(id string) (Identity, error) {
 	result := &identity{make(map[string]interface{})}
 	idparts := strings.Split(id, ".")
