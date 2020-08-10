@@ -7,9 +7,7 @@ import (
 )
 
 func TestAuthority_Info(t *testing.T) {
-	rname := "api.profile.view"
-
-	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", rname)
+	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Error(err)
@@ -23,7 +21,7 @@ func TestAuthority_Info(t *testing.T) {
 		return
 	}
 
-	clms, err := secure.Security.Info(stkn, "secret")
+	clms, err := secure.Security.ClientInsight(stkn, "secret")
 
 	if err != nil {
 		t.Error("Info Error", err)

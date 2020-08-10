@@ -13,9 +13,8 @@ import (
 //Security controls Client and Resource authentication
 type Security interface {
 	tokens.Signer
-	RequestToken(id, secret, ut string, resources ...string) (tokens.Identity, error)
-	Inspect(token, resource, secret string) (tokens.Claims, error)
-	Info(token, secret string) (tokens.Claims, error) //local api
+	IdentityInsider
+	RequestToken(id, secret, ut string, resources map[string]bool) (tokens.Identity, error)
 	QueryClient(partial string) (prime.ClientQuery, error)
 	Whitelist(resource, secret string) ([]string, error)
 }
@@ -104,8 +103,8 @@ func (a authority) GetCallback(token tokens.Claimer) (string, error) {
 //id: clientId
 //secret: clientSecret
 //ut: pre-authenticated user token
-//scopes: resources used by the requesting page.
-func (s security) RequestToken(id, secret, usrtkn string, resources ...string) (tokens.Identity, error) {
+//scopes: resources used by the requesting page. TRUE == REQUIRED
+func (s security) RequestToken(id, secret, usrtkn string, resources map[string]bool) (tokens.Identity, error) {
 	result, err := tokens.NewIdentity(id)
 
 	if err != nil {
@@ -125,9 +124,15 @@ func (s security) RequestToken(id, secret, usrtkn string, resources ...string) (
 	//Get Client needs from Profile
 	result.AddClaims(prof.GetClientClaims(clnt))
 
-	for _, rsrc := range resources {
+	for rsrc, must := range resources {
 		if !clnt.ResourceAllowed(rsrc) {
-			return nil, errors.New("scope not allowed")
+			msg := "scope not allowed"
+
+			if must {
+				msg = "required " + msg
+			}
+
+			return nil, errors.New(msg)
 		}
 
 		resrc, err := s.Store.GetResource(rsrc)
@@ -148,8 +153,8 @@ func (s security) RequestToken(id, secret, usrtkn string, resources ...string) (
 	return result, nil
 }
 
-//Info returns token information to the client
-func (s security) Info(token, secret string) (tokens.Claims, error) {
+//ClientInsight returns token information to the client
+func (s security) ClientInsight(token, secret string) (tokens.Claims, error) {
 	clms, err := tokens.OpenIdentity(s.key, token)
 
 	if err != nil {
@@ -173,8 +178,8 @@ func (s security) Info(token, secret string) (tokens.Claims, error) {
 	return clms, nil
 }
 
-//Inspect returns the resources requested token information to the resource
-func (s security) Inspect(token, resource, secret string) (tokens.Claims, error) {
+//ResourceInsight returns the resources requested token information to the resource
+func (s security) ResourceInsight(token, resource, secret string) (tokens.Claims, error) {
 	resrc, err := s.Store.GetResource(resource)
 
 	if err != nil {

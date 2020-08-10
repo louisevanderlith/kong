@@ -27,7 +27,7 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := prime.QueryRequest{Partial: ut.(string)}
+	req := prime.QueryRequest{Token: ut.(string)}
 	user, concern, err := auth.Authority.ClientQuery(req)
 
 	if err != nil {
@@ -97,8 +97,8 @@ func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	obj := prime.ConsentRequest{
-		UserToken:   ut.(string),
+	obj := prime.QueryRequest{
+		Token:  ut.(string),
 		Claims: nil,
 	}
 

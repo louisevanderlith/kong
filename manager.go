@@ -3,6 +3,7 @@ package kong
 import (
 	"errors"
 	"fmt"
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
 	"log"
@@ -12,7 +13,8 @@ import (
 //Manager controls User authentication
 type Manager interface {
 	tokens.Signer
-	Login(id, username, password string) (tokens.UserIdentity, error) //partial token
+	UserInsider
+	Login(id, username, password string) (tokens.UserIdentity, error)              //partial token
 	Consent(usrToken string, consent map[string]bool) (tokens.UserIdentity, error) //finalize token
 	FetchNeeds(usrToken string, needs ...string) (tokens.UserIdentity, error)
 }
@@ -22,8 +24,23 @@ func NewManager(users stores.UserStore) Manager {
 }
 
 type manager struct {
-	key []byte
+	key   []byte
 	users stores.UserStore
+}
+
+//Insight for Clients and Resources, they've already proved they can open an identity.
+func (m manager) Insight(request prime.QueryRequest) (tokens.Claims, error) {
+	clms, err := tokens.OpenUserIdentity(m.key, request.Token)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if clms.IsExpired() {
+		return nil, errors.New("token expired")
+	}
+
+	return clms, nil
 }
 
 //Login returns the Client's User Key Token after successful authentication
@@ -74,7 +91,7 @@ func (m manager) Consent(usrToken string, consent map[string]bool) (tokens.UserI
 }
 
 func (m manager) FetchNeeds(usrToken string, needs ...string) (tokens.UserIdentity, error) {
-	idn,err := tokens.OpenUserIdentity(m.key, usrToken)
+	idn, err := tokens.OpenUserIdentity(m.key, usrToken)
 
 	if err != nil {
 		return nil, err

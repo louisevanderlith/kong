@@ -16,11 +16,10 @@ import (
 )
 
 // Secure is the API for Authentication
-
-func ObtainToken(srvr *httptest.Server, clientId, secret string, scopes ...string) (string, error) {
-	tknReq := prime.TokenReq{
-		UserToken: "",
-		Scopes:    scopes,
+func ObtainToken(srvr *httptest.Server, usertoken []byte, clientId, secret string, scopes map[string]bool) (string, error) {
+	tknReq := prime.QueryRequest{
+		Token:  string(usertoken),
+		Claims: scopes,
 	}
 	obj, err := json.Marshal(tknReq)
 
@@ -60,7 +59,7 @@ func ObtainToken(srvr *httptest.Server, clientId, secret string, scopes ...strin
 }
 
 func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (tokens.Claims, error) {
-	insReq := prime.InspectReq{AccessCode: token}
+	insReq := prime.QueryRequest{Token: token}
 	obj, err := json.Marshal(insReq)
 
 	if err != nil {
@@ -98,7 +97,7 @@ func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (to
 }
 
 func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (tokens.Claims, error) {
-	insReq := prime.InspectReq{AccessCode: token}
+	insReq := prime.QueryRequest{Token: token}
 	obj, err := json.Marshal(insReq)
 
 	if err != nil {
@@ -138,7 +137,9 @@ func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (tokens.C
 func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
 	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
-	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
+
+	_, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
+
 	if err != nil {
 		t.Error(err)
 		return
@@ -148,7 +149,7 @@ func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
 func TestHandleTokenPOST_UserRequired(t *testing.T) {
 	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
-	_, err := ObtainToken(ts, "kong.viewr", "secret", "api.user.view")
+	_, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.user.view": true})
 
 	if err == nil {
 		t.Error("expecting error")
@@ -165,7 +166,7 @@ func TestHandleInspectPOST(t *testing.T) {
 	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
-	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
+	tkn, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Fatal("Obtain Token Error", err)
@@ -189,7 +190,7 @@ func TestHandleInfoPOST(t *testing.T) {
 	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
-	tkn, err := ObtainToken(ts, "kong.viewr", "secret", "api.profile.view")
+	tkn, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Fatal("Obtain Token Error", err)

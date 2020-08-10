@@ -27,7 +27,8 @@ func NewFakeProfiles() []prime.Profile {
 					CodesEnabled: true,
 					AllowedResources: []string{
 						"api.profile.view",
-						"api.user.view"},
+						"api.user.view",
+						"entity.user.view"},
 				},
 				{
 					Name:   "auth",
@@ -35,7 +36,8 @@ func NewFakeProfiles() []prime.Profile {
 					Url:    "http://localhost:8094",
 					AllowedResources: []string{
 						"entity.consent.apply",
-						"entity.login.apply"},
+						"entity.login.apply",
+						"entity.user.view"},
 				},
 			},
 			Endpoints: prime.Map{

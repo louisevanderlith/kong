@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestEncodeClaims_Decode_MustHaveAllClaims(t *testing.T){
+func TestEncodeClaims_Decode_MustHaveAllClaims(t *testing.T) {
 	clms, err := tokens.NewIdentity("kong.test")
 	clms.AddClaim(tokens.KongCodes, map[string]interface{}{"gtag": "000000-00"})
 	clms.AddClaim(tokens.KongEndpoints, map[string]interface{}{"artifact": "http://localhost:8082", "comment": "http://localhost:8084", "comms": "http://localhost:8085", "theme": "http://localhost:8093"})

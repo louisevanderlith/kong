@@ -17,7 +17,7 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dec := json.NewDecoder(r.Body)
-	req := prime.TokenReq{}
+	req := prime.QueryRequest{}
 	err := dec.Decode(&req)
 
 	if err != nil {
@@ -26,7 +26,7 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tkn, err := secure.Security.RequestToken(clnt, pass, req.UserToken, req.Scopes...)
+	tkn, err := secure.Security.RequestToken(clnt, pass, req.Token, req.Claims)
 
 	if err != nil {
 		log.Println("Request Token Error", err)
