@@ -9,6 +9,7 @@ import (
 	"github.com/louisevanderlith/kong/prime"
 )
 
+//Resource Insight
 func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
 	scp, pass, ok := r.BasicAuth()
 
@@ -18,7 +19,7 @@ func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dec := json.NewDecoder(r.Body)
-	req := prime.InspectReq{}
+	req := prime.QueryRequest{}
 	err := dec.Decode(&req)
 
 	if err != nil {
@@ -27,7 +28,7 @@ func HandleInspectPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	claims, err := secure.Security.Inspect(req.AccessCode, scp, pass)
+	claims, err := secure.Security.ResourceInsight(req.Token, scp, pass)
 
 	if err != nil {
 		log.Println("Inspect Error", err)

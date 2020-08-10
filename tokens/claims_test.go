@@ -8,7 +8,6 @@ func TestOpenClaims(t *testing.T) {
 	//OpenClaims("TOKEN", , &res)
 }
 
-
 func TestClaimer_AddClaim_New(t *testing.T) {
 	clmr := EmptyClaims()
 	err := clmr.AddClaim("user", "donkey")
@@ -37,4 +36,3 @@ func TestClaimer_AddClaim_NoDuplicates(t *testing.T) {
 		t.Error("invalid claim value", val)
 	}
 }
-

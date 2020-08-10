@@ -9,7 +9,7 @@ import (
 func TestAuthority_Inspect_ReturnsTokenClaims(t *testing.T) {
 	rname := "api.profile.view"
 
-	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", rname)
+	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Error("Request Token Error", err)
@@ -23,7 +23,7 @@ func TestAuthority_Inspect_ReturnsTokenClaims(t *testing.T) {
 		return
 	}
 
-	clms, err := secure.Security.Inspect(stkn, rname, "secret")
+	clms, err := secure.Security.ResourceInsight(stkn, rname, "secret")
 
 	if err != nil {
 		t.Error("Inspect Error", err)

@@ -3,6 +3,7 @@ package samples
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
@@ -14,7 +15,7 @@ import (
 )
 
 // Auth is the UI for Authentication
-func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, password string) (string, error) {
+func ObtainUserLogin(manServer *httptest.Server, secServer *httptest.Server, clientId, username, password string) (string, error) {
 	insReq := prime.LoginRequest{
 		Client:   clientId,
 		Username: username,
@@ -27,8 +28,14 @@ func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, pass
 		return "", err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, srvr.URL+"/login", bytes.NewBuffer(obj))
-	req.Header.Set("Authorization", "Bearer "+logintoken)
+	authtkn, err := ObtainToken(secServer, []byte{}, "kong.auth", "secret", map[string]bool{"entity.login.apply":true, "entity.consent.apply":true})
+
+	if err != nil {
+		return "", errors.New("unable to obtain auth token")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, manServer.URL+"/login", bytes.NewBuffer(obj))
+	req.Header.Set("Authorization", "Bearer "+authtkn)
 
 	if err != nil {
 		return "", err
@@ -39,7 +46,7 @@ func ObtainUserLogin(srvr *httptest.Server, logintoken, clientId, username, pass
 		panic(err)
 	}
 
-	clnt := srvr.Client()
+	clnt := manServer.Client()
 	clnt.Jar = jar
 	resp, err := clnt.Do(req)
 
@@ -69,14 +76,7 @@ func TestHandleLoginPOST(t *testing.T) {
 	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
 	defer tm.Close()
 
-	tkn, err := ObtainToken(ts, "kong.auth", "secret", "entity.login.apply", "entity.consent.apply")
-
-	if err != nil {
-		t.Fatal("Obtain Token Error", err)
-		return
-	}
-
-	ut, err := ObtainUserLogin(tm, tkn, "kong.auth", "user@fake.com", "user1pass")
+	ut, err := ObtainUserLogin(tm, ts, "kong.viewr", "user@fake.com", "user1pass")
 
 	if err != nil {
 		t.Error("Obtain Login Error", err)

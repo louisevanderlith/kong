@@ -24,8 +24,8 @@ type Claims interface {
 }
 
 const (
-	KongIssued    = "kong.iat"
-	KongExpired   = "kong.exp"
+	KongIssued  = "kong.iat"
+	KongExpired = "kong.exp"
 )
 
 //EmptyClaims returns a new instance of a Claims map
@@ -130,5 +130,5 @@ func (c *claims) MarshalJSON() ([]byte, error) {
 }
 
 func (c *claims) UnmarshalJSON(b []byte) error {
-	return json.Unmarshal(b,&c.values)
+	return json.Unmarshal(b, &c.values)
 }

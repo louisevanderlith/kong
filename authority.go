@@ -11,7 +11,7 @@ import (
 // Authority provides functions for connecting Security & User Manager functions
 type Authority interface {
 	ClientQuery(request prime.QueryRequest) (string, map[string][]string, error)
-	GiveConsent(request prime.ConsentRequest) (string, error)
+	GiveConsent(request prime.QueryRequest) (string, error)
 	AuthenticateUser(request prime.LoginRequest) (string, error)
 }
 
@@ -66,7 +66,7 @@ func (a authority) ClientQuery(request prime.QueryRequest) (string, map[string][
 }
 
 //GiveConsent returns a signed user token
-func (a authority) GiveConsent(request prime.ConsentRequest) (string, error) {
+func (a authority) GiveConsent(request prime.QueryRequest) (string, error) {
 	bits, err := json.Marshal(request)
 
 	if err != nil {

@@ -10,8 +10,7 @@ import (
 
 //TestSecurity_RequestToken_NoClient Tests that an error is returned when no client is found
 func TestSecurity_RequestToken_NoClient(t *testing.T) {
-	scp := "profile"
-	_, err := secure.Security.RequestToken("kong.xxx", "secret", "", scp)
+	_, err := secure.Security.RequestToken("kong.xxx", "secret", "", map[string]bool{"api.profile.view": true})
 
 	if err == nil {
 		t.Error("error expected")
@@ -25,8 +24,7 @@ func TestSecurity_RequestToken_NoClient(t *testing.T) {
 
 //TestAuthority_RequestToken_HasClient Tests that the correct client is returned
 func TestSecurity_RequestToken_HasClient(t *testing.T) {
-	rname := "api.profile.view"
-	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", rname)
+	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Error(err)
@@ -39,8 +37,7 @@ func TestSecurity_RequestToken_HasClient(t *testing.T) {
 }
 
 func TestSecurity_RequestToken_HasEndpoints(t *testing.T) {
-	rname := "api.profile.view"
-	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", rname)
+	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", "", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Error("Request Token Error", err)
@@ -62,7 +59,7 @@ func TestSecurity_RequestToken_HasEndpoints(t *testing.T) {
 func TestSecurity_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 	rname := "api.profile.view"
 
-	idn, err := secure.Security.RequestToken("kong.viewr", "secret", "", rname)
+	idn, err := secure.Security.RequestToken("kong.viewr", "secret", "", map[string]bool{rname: true})
 
 	if err != nil {
 		t.Error("Request Token Error", err)
@@ -76,7 +73,7 @@ func TestSecurity_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 		return
 	}
 
-	opn, err := secure.Security.Info(tkn, "secret")
+	opn, err := secure.Security.ClientInsight(tkn, "secret")
 
 	if err != nil {
 		t.Error("Info Error", err)
@@ -111,7 +108,7 @@ func TestSecurity_RequestToken_ResourceScope_HasAllClaims(t *testing.T) {
 }
 
 func TestSecurity_RequestToken_UserInfo_InvalidUser(t *testing.T) {
-	scp := "api.user.view"
+	scp := map[string]bool{"api.user.view": true}
 	_, err := secure.Security.RequestToken("kong.viewr", "secret", "", scp)
 
 	if err == nil {
@@ -121,7 +118,6 @@ func TestSecurity_RequestToken_UserInfo_InvalidUser(t *testing.T) {
 }
 
 func TestSecurity_RequestToken_UserInfo_ValidUser_RequiresConsent(t *testing.T) {
-	scp := "api.user.view"
 	uclms, err := entity.Manager.Login("kong.viewr", "user@fake.com", "user1pass")
 
 	if err != nil {
@@ -151,7 +147,7 @@ func TestSecurity_RequestToken_UserInfo_ValidUser_RequiresConsent(t *testing.T) 
 		return
 	}
 
-	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", utkn, scp)
+	tkn, err := secure.Security.RequestToken("kong.viewr", "secret", utkn, map[string]bool{"api.user.view": true})
 
 	if err != nil {
 		t.Error("Request Token Error", err)

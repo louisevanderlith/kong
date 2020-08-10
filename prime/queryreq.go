@@ -1,8 +1,8 @@
 package prime
 
-//
 type QueryRequest struct {
-	Partial string
+	Token  string
+	Claims map[string]bool
 }
 
 //ClientQuery is the response from QueryRequest
