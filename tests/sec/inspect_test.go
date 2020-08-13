@@ -43,4 +43,15 @@ func TestAuthority_Inspect_ReturnsTokenClaims(t *testing.T) {
 		t.Error("no client")
 		return
 	}
+
+	val, err := clms.GetCode("gtag")
+
+	if err != nil {
+		t.Error("Get Code Error", err)
+		return
+	}
+
+	if val != "000000-00" {
+		t.Error("invalid value", val)
+	}
 }

@@ -105,14 +105,23 @@ func (c *identity) GetCode(name string) (string, error) {
 		return "", errors.New("kong.codes claim not found")
 	}
 
-	codes := codesClms.(dict.Map)
-	code := codes.Get(name)
+	codes, isMap := codesClms.(dict.Map)
 
-	if len(code) == 0 {
-		return "", fmt.Errorf("code %s not found in %v", name, codes)
+	if isMap {
+		return codes.Get(name), nil
 	}
 
-	return code, nil
+	if pairs, isSlice := codesClms.([]interface{}); isSlice {
+		for i := 0; i < len(pairs); i++ {
+			kv := pairs[i].(map[string]interface{})
+
+			if kv["Key"] == name {
+				return kv["Value"].(string), nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("code %s not found in %v", name, codes)
 }
 
 func (c *identity) GetTerm(name string) (string, error) {
@@ -122,15 +131,23 @@ func (c *identity) GetTerm(name string) (string, error) {
 		return "", errors.New("kong.terms claim not found")
 	}
 
-	terms := termsClms.(dict.Map)
+	terms, isMap := termsClms.(dict.Map)
 
-	term := terms.Get(name)
-
-	if len(term) == 0 {
-		return "", fmt.Errorf("terms %s not found in %v", name, terms)
+	if isMap {
+		return terms.Get(name), nil
 	}
 
-	return term, nil
+	if pairs, isSlice := termsClms.([]interface{}); isSlice {
+		for i := 0; i < len(pairs); i++ {
+			kv := pairs[i].(map[string]interface{})
+
+			if kv["Key"] == name {
+				return kv["Value"].(string), nil
+			}
+		}
+	}
+
+		return "", fmt.Errorf("terms %s not found in %v", name, terms)
 }
 
 func (c *identity) GetID() string {
