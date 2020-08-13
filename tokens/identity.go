@@ -74,8 +74,13 @@ func (c *identity) GetResourceURL(name string) (string, error) {
 	}
 
 	ends := endsClms.(map[string]interface{})
-	servIdx := strings.Index(name, ".")
-	url, ok := ends[name[:servIdx]]
+
+	if strings.Contains(name, ".") {
+		servIdx := strings.Index(name, ".")
+		name = name[:servIdx]
+	}
+
+	url, ok := ends[name]
 
 	if !ok {
 		return "", fmt.Errorf("endpoint %s not found in %v", name, ends)
