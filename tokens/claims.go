@@ -28,7 +28,7 @@ const (
 	KongExpired = "kong.exp"
 )
 
-//EmptyClaims returns a new instance of a Claims map
+//EmptyClaims returns a new instance of a Claims dict
 func EmptyClaims() Claims {
 	return &claims{make(map[string]interface{})}
 }

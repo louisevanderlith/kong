@@ -2,6 +2,7 @@ package fakes
 
 import (
 	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/kong/dict"
 	"github.com/louisevanderlith/kong/prime"
 )
 
@@ -40,11 +41,11 @@ func NewFakeProfiles() []prime.Profile {
 						"entity.user.view"},
 				},
 			},
-			Endpoints: prime.Map{
+			Endpoints: dict.Map{
 				{"api", "https://api.kong"},
 				{"entity", "https://entity.kong"},
 			},
-			Codes: prime.Map{
+			Codes: dict.Map{
 				{"gtag", "000000-00"},
 			},
 		},

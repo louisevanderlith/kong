@@ -25,7 +25,7 @@ import (
 func TestFlow_User(t *testing.T) {
 	appId := "kong.viewr"
 	// Try to obtain token, should fail since we're requesting a user claim
-	_, err := secure.Security.RequestToken(appId, "secret", "", map[string]bool{"api.user.view":true})
+	_, err := secure.Security.RequestToken(appId, "secret", "", map[string]bool{"api.user.view": true})
 
 	if err == nil {
 		t.Error("unexpected success, user should be required")
@@ -67,7 +67,7 @@ func TestFlow_User(t *testing.T) {
 		return
 	}
 
-	tkn, err := secure.Security.RequestToken(appId, "secret", ut, map[string]bool{"api.user.view":true})
+	tkn, err := secure.Security.RequestToken(appId, "secret", ut, map[string]bool{"api.user.view": true})
 
 	if err != nil {
 		t.Error(err)

@@ -28,7 +28,7 @@ func ObtainUserLogin(manServer *httptest.Server, secServer *httptest.Server, cli
 		return "", err
 	}
 
-	authtkn, err := ObtainToken(secServer, []byte{}, "kong.auth", "secret", map[string]bool{"entity.login.apply":true, "entity.consent.apply":true})
+	authtkn, err := ObtainToken(secServer, []byte{}, "kong.auth", "secret", map[string]bool{"entity.login.apply": true, "entity.consent.apply": true})
 
 	if err != nil {
 		return "", errors.New("unable to obtain auth token")

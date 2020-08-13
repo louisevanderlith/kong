@@ -17,7 +17,7 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
-	token, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view":true})
+	token, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Fatal("Obtain Token Error", err)
@@ -50,7 +50,7 @@ func TestResource_Middleware_SetContext_ForUsers(t *testing.T) {
 		return
 	}
 
-	token, err := ObtainToken(ts, []byte(token4user), "kong.viewr", "secret", map[string]bool{"api.user.view":true})
+	token, err := ObtainToken(ts, []byte(token4user), "kong.viewr", "secret", map[string]bool{"api.user.view": true})
 
 	if err != nil {
 		t.Fatal("Obtain Token Error", err)

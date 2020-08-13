@@ -1,4 +1,4 @@
-package prime
+package dict
 
 type Map []KeyValue
 
