@@ -154,7 +154,7 @@ func (s security) RequestToken(id, secret, usrtkn string, resources map[string]b
 }
 
 //ClientInsight returns token information to the client
-func (s security) ClientInsight(token, secret string) (tokens.Claims, error) {
+func (s security) ClientInsight(token, secret string) (tokens.Identity, error) {
 	clms, err := tokens.OpenIdentity(s.key, token)
 
 	if err != nil {
@@ -179,7 +179,7 @@ func (s security) ClientInsight(token, secret string) (tokens.Claims, error) {
 }
 
 //ResourceInsight returns the resources requested token information to the resource
-func (s security) ResourceInsight(token, resource, secret string) (tokens.Claims, error) {
+func (s security) ResourceInsight(token, resource, secret string) (tokens.Identity, error) {
 	resrc, err := s.Store.GetResource(resource)
 
 	if err != nil {

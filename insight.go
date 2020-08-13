@@ -12,8 +12,8 @@ import (
 
 //IdentityInsider provides the ability for Resources and Clients to inspect tokens
 type IdentityInsider interface {
-	ResourceInsight(token, resource, secret string) (tokens.Claims, error)
-	ClientInsight(token, secret string) (tokens.Claims, error)
+	ResourceInsight(token, resource, secret string) (tokens.Identity, error)
+	ClientInsight(token, secret string) (tokens.Identity, error)
 }
 
 func FetchIdentity(clnt *http.Client, token []byte, inspectUrl string, name string, secret string) (tokens.Identity, error) {
