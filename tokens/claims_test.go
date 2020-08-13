@@ -2,13 +2,7 @@ package tokens
 
 import "testing"
 
-func TestOpenClaims(t *testing.T) {
-
-	//res := EmptyClaims()
-	//OpenClaims("TOKEN", , &res)
-}
-
-func TestClaimer_AddClaim_New(t *testing.T) {
+func TestClaims_AddClaim_New(t *testing.T) {
 	clmr := EmptyClaims()
 	err := clmr.AddClaim("user", "donkey")
 
@@ -21,7 +15,7 @@ func TestClaimer_AddClaim_New(t *testing.T) {
 	}
 }
 
-func TestClaimer_AddClaim_NoDuplicates(t *testing.T) {
+func TestClaims_AddClaim_NoDuplicates(t *testing.T) {
 	clmr := EmptyClaims()
 	clmr.AddClaim("user", "donkey")
 	err := clmr.AddClaim("user", "kong")

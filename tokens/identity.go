@@ -3,6 +3,7 @@ package tokens
 import (
 	"errors"
 	"fmt"
+	"github.com/louisevanderlith/kong/dict"
 	"strings"
 )
 
@@ -104,14 +105,14 @@ func (c *identity) GetCode(name string) (string, error) {
 		return "", errors.New("kong.codes claim not found")
 	}
 
-	codes := codesClms.(map[string]interface{})
-	code, ok := codes[name]
+	codes := codesClms.(dict.Map)
+	code := codes.Get(name)
 
-	if !ok {
+	if len(code) == 0 {
 		return "", fmt.Errorf("code %s not found in %v", name, codes)
 	}
 
-	return code.(string), nil
+	return code, nil
 }
 
 func (c *identity) GetTerm(name string) (string, error) {
@@ -121,14 +122,15 @@ func (c *identity) GetTerm(name string) (string, error) {
 		return "", errors.New("kong.terms claim not found")
 	}
 
-	terms := termsClms.(map[string]interface{})
-	term, ok := terms[name]
+	terms := termsClms.(dict.Map)
 
-	if !ok {
+	term := terms.Get(name)
+
+	if len(term) == 0 {
 		return "", fmt.Errorf("terms %s not found in %v", name, terms)
 	}
 
-	return term.(string), nil
+	return term, nil
 }
 
 func (c *identity) GetID() string {

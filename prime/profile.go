@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/kong/dict"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
 )
@@ -14,9 +15,9 @@ type Profile struct {
 	Contacts    Contacts
 	ImageKey    husk.Key `hsk:"null"`
 	Clients     []Client
-	Endpoints   Map
-	Codes       Map
-	Terms       Map
+	Endpoints   dict.Map
+	Codes       dict.Map
+	Terms       dict.Map
 }
 
 func (p Profile) Valid() error {

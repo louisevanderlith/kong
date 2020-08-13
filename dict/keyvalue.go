@@ -1,4 +1,4 @@
-package prime
+package dict
 
 type KeyValue struct {
 	Key   string
