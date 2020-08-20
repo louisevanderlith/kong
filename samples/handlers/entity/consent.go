@@ -20,7 +20,7 @@ func HandleConsentPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ut, err := entity.Manager.Consent(obj.Token, obj.Claims)
+	ut, err := entity.Manager.Consent(obj.Token, obj.Claims.(map[string]bool))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

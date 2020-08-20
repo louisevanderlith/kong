@@ -81,8 +81,22 @@ func ClientMiddleware(clnt *http.Client, id, secret, securityUrl, authorityUrl s
 	}
 }
 
+type ResourceInspector struct {
+	clnt        *http.Client
+	securityUrl string
+	managerUrl  string
+}
+
+func NewResourceInspector(clnt *http.Client, securityUrl, managerUrl string) ResourceInspector {
+	return ResourceInspector{
+		clnt:        clnt,
+		securityUrl: securityUrl,
+		managerUrl:  managerUrl,
+	}
+}
+
 //ResourceMiddleware
-func ResourceMiddleware(clnt *http.Client, scope, secret, securityUrl, managerUrl string, handle http.HandlerFunc) http.HandlerFunc {
+func (ins ResourceInspector) Middleware(scope, secret string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, err := GetBearerToken(r)
 
@@ -92,7 +106,7 @@ func ResourceMiddleware(clnt *http.Client, scope, secret, securityUrl, managerUr
 			return
 		}
 
-		claims, err := FetchIdentity(clnt, []byte(token), securityUrl+"/inspect", scope, secret)
+		claims, err := FetchIdentity(ins.clnt, []byte(token), ins.securityUrl+"/inspect", scope, secret)
 
 		if err != nil {
 			log.Println("Exchange Error", err)
@@ -103,8 +117,8 @@ func ResourceMiddleware(clnt *http.Client, scope, secret, securityUrl, managerUr
 		idn := context.WithValue(r.Context(), "claims", claims)
 		r = r.WithContext(idn)
 
-		if claims.HasUser() && len(managerUrl) > 0 {
-			usrclaims, err := FetchUserIdentity(clnt, []byte(claims.GetUserToken()), []byte(token), managerUrl)
+		if claims.HasUser() && len(ins.managerUrl) > 0 {
+			usrclaims, err := FetchUserIdentity(ins.clnt, []byte(claims.GetUserToken()), []byte(token), ins.managerUrl)
 
 			if err != nil {
 				log.Println("User Exchange Error", err)

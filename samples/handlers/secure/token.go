@@ -26,7 +26,15 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tkn, err := secure.Security.RequestToken(clnt, pass, req.Token, req.Claims)
+	require, err := req.GetRequirements()
+
+	if err != nil {
+		log.Println("Get Requirements Error", err)
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+
+	tkn, err := secure.Security.RequestToken(clnt, pass, req.Token, require)
 
 	if err != nil {
 		log.Println("Request Token Error", err)
@@ -41,5 +49,9 @@ func HandleTokenPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(stkn))
+	_, err = w.Write([]byte(stkn))
+
+	if err != nil {
+		log.Println("Serve Error", err)
+	}
 }
