@@ -3,6 +3,7 @@ package prime
 import (
 	"fmt"
 	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/kong/prime/roletype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,6 +23,7 @@ type User struct {
 	Password  string `hsk:"min(6)"`
 	Contacts  Contacts
 	Resources []string
+	Roles     []Role
 }
 
 func NewUser(name, email, password string, verified bool, contacts Contacts, resources []string) Userer {
@@ -74,11 +76,26 @@ func (u User) ProvideClaim(claim string) (string, error) {
 	return "", fmt.Errorf("user: no '%s' claim found", claim)
 }
 
+func (u User) ClientRole(profileID string) roletype.Enum {
+	if len(profileID) == 0 {
+		return roletype.Nobody
+	}
+
+	for _, v := range u.Roles {
+		if v.ProfileID == profileID {
+			return v.Role
+		}
+	}
+
+	return roletype.Nobody
+}
+
 func (u User) ResourceAllowed(name string) bool {
 	for _, v := range u.Resources {
 		if v == name {
 			return true
 		}
 	}
+
 	return false
 }

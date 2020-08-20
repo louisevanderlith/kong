@@ -28,7 +28,8 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	handle := kong.ResourceMiddleware(ts.Client(), "api.profile.view", "secret", ts.URL, "", api.HandleProfileGET)
+	ins := kong.NewResourceInspector(ts.Client(), ts.URL, "")
+	handle := ins.Middleware("api.profile.view", "secret", api.HandleProfileGET)
 	handle(rr, req)
 
 	if rr.Code != http.StatusOK {
@@ -66,7 +67,8 @@ func TestResource_Middleware_SetContext_ForUsers(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	handle := kong.ResourceMiddleware(ts.Client(), "api.user.view", "secret", ts.URL, tm.URL, api.HandleUserGET)
+	ins := kong.NewResourceInspector(ts.Client(), ts.URL, tm.URL)
+	handle := ins.Middleware("api.user.view", "secret", api.HandleUserGET)
 	handle(rr, req)
 
 	if rr.Code != http.StatusOK {

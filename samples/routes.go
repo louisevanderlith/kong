@@ -27,9 +27,10 @@ func GetAuthRoutes() http.Handler {
 func GetManagerRoutes(clnt *http.Client, securityUrl string) http.Handler {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/login", kong.ResourceMiddleware(clnt, "entity.login.apply", "secret", securityUrl, "", entity.HandleLoginPOST)).Methods(http.MethodPost)
-	r.HandleFunc("/consent", kong.ResourceMiddleware(clnt, "entity.consent.apply", "secret", securityUrl, "", entity.HandleConsentPOST)).Methods(http.MethodPost)
-	r.HandleFunc("/insight", kong.ResourceMiddleware(clnt, "entity.user.view", "secret", securityUrl, "", entity.HandleInsightPost)).Methods(http.MethodPost)
+	ins := kong.NewResourceInspector(clnt, securityUrl, "")
+	r.HandleFunc("/login", ins.Middleware("entity.login.apply", "secret", entity.HandleLoginPOST)).Methods(http.MethodPost)
+	r.HandleFunc("/consent", ins.Middleware("entity.consent.apply", "secret", entity.HandleConsentPOST)).Methods(http.MethodPost)
+	r.HandleFunc("/insight", ins.Middleware("entity.user.view", "secret", entity.HandleInsightPost)).Methods(http.MethodPost)
 
 	return r
 }
@@ -61,9 +62,10 @@ func GetViewrRoutes(clnt *http.Client, securityUrl, authorityUrl string) http.Ha
 func GetApiRoutes(clnt *http.Client, securityUrl, managerUrl string) http.Handler {
 	r := mux.NewRouter()
 
-	profMdl := kong.ResourceMiddleware(clnt, "api.profile.view", "secret", securityUrl, managerUrl, api.HandleProfileGET)
+	ins := kong.NewResourceInspector(clnt, securityUrl, "")
+	profMdl := ins.Middleware("api.profile.view", "secret", api.HandleProfileGET)
 	r.HandleFunc("/profile", profMdl).Methods(http.MethodGet)
-	usrMdl := kong.ResourceMiddleware(clnt, "api.user.view", "secret", securityUrl, managerUrl, api.HandleUserGET)
+	usrMdl := ins.Middleware("api.user.view", "secret", api.HandleUserGET)
 	r.HandleFunc("/user", usrMdl).Methods(http.MethodGet)
 
 	return r

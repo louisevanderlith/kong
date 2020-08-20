@@ -44,7 +44,7 @@ func (m manager) Insight(request prime.QueryRequest) (tokens.Claims, error) {
 }
 
 //Login returns the Client's User Key Token after successful authentication
-func (m manager) Login(id, username, password string) (tokens.UserIdentity, error) {
+func (m manager) Login(audience, username, password string) (tokens.UserIdentity, error) {
 	id, usr := m.users.GetUserByName(username)
 
 	if usr == nil {
@@ -55,7 +55,7 @@ func (m manager) Login(id, username, password string) (tokens.UserIdentity, erro
 		return nil, errors.New("invalid user")
 	}
 
-	result := tokens.NewUserIdentity(id, usr.GetName())
+	result := tokens.NewUserIdentity(id, usr.GetName(), audience)
 
 	return result, nil
 }
@@ -97,7 +97,7 @@ func (m manager) FetchNeeds(usrToken string, needs ...string) (tokens.UserIdenti
 		return nil, err
 	}
 
-	result := tokens.NewUserIdentity(idn.GetUserID(), idn.GetDisplayName())
+	result := tokens.NewUserIdentity(idn.GetUserID(), idn.GetDisplayName(), idn.GetAudience())
 
 	for _, n := range needs {
 		val := idn.GetClaim(n)
