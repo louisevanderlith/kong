@@ -1,7 +1,7 @@
 package roletype
 
 // Environment provides indicates in which environment a system is
-type Enum int
+type Enum = int
 
 const (
 	Nobody Enum = iota
@@ -17,6 +17,7 @@ var roletypes = [...]string{
 	"Nobody",
 }
 
+/*
 func (e Enum) String() string {
 	return roletypes[e]
-}
+}*/
