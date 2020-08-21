@@ -7,11 +7,11 @@ import (
 )
 
 type Resource struct {
-	Name        string
-	DisplayName string
+	Name        string `hsk:"size(25)"`
+	DisplayName string `hsk:"size(50)"`
 	Secret      string
 	Needs       []string
-	Require     roletype.Enum
+	Require     roletype.Enum `hsk:"null"`
 }
 
 func NewResource(name, displayName, secret string, needs []string, require roletype.Enum) Resource {
