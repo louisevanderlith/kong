@@ -3,7 +3,8 @@ package prime
 import (
 	"errors"
 	"fmt"
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/hsk"
+	"github.com/louisevanderlith/husk/validation"
 	"github.com/louisevanderlith/kong/dict"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
@@ -13,7 +14,7 @@ type Profile struct {
 	Title       string `hsk:"size(128)"`
 	Description string `hsk:"size(512)" json:",omitempty"`
 	Contacts    Contacts
-	ImageKey    husk.Key `hsk:"null"`
+	ImageKey    hsk.Key `hsk:"null"`
 	Clients     []Client
 	Endpoints   dict.Map
 	Codes       dict.Map
@@ -21,7 +22,7 @@ type Profile struct {
 }
 
 func (p Profile) Valid() error {
-	return husk.ValidateStruct(&p)
+	return validation.ValidateStruct(p)
 }
 
 func (p Profile) GetClient(id string) (Client, error) {

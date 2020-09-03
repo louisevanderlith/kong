@@ -1,7 +1,7 @@
 package prime
 
 import (
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/validation"
 	"github.com/louisevanderlith/kong/prime/roletype"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -30,7 +30,7 @@ func NewResource(name, displayName, secret string, needs []string, require rolet
 }
 
 func (r Resource) Valid() error {
-	return husk.ValidateStruct(&r)
+	return validation.ValidateStruct(r)
 }
 
 func (r Resource) VerifySecret(secret string) bool {
