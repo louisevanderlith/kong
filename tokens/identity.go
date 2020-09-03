@@ -147,7 +147,7 @@ func (c *identity) GetTerm(name string) (string, error) {
 		}
 	}
 
-		return "", fmt.Errorf("terms %s not found in %v", name, terms)
+	return "", fmt.Errorf("terms %s not found in %v", name, terms)
 }
 
 func (c *identity) GetID() string {

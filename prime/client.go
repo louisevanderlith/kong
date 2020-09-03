@@ -1,7 +1,7 @@
 package prime
 
 import (
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/validation"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,7 +31,7 @@ func NewClient(name, secret, url string, terms, codes bool, resources []string) 
 }
 
 func (c Client) Valid() error {
-	return husk.ValidateStruct(&c)
+	return validation.ValidateStruct(c)
 }
 
 func (c Client) ResourceAllowed(resource string) bool {

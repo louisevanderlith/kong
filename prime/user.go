@@ -2,7 +2,7 @@ package prime
 
 import (
 	"fmt"
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/validation"
 	"github.com/louisevanderlith/kong/prime/roletype"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -55,7 +55,7 @@ func (u User) IsVerified() bool {
 }
 
 func (u User) Valid() error {
-	return husk.ValidateStruct(&u)
+	return validation.ValidateStruct(u)
 }
 
 func (u User) VerifyPassword(password string) bool {

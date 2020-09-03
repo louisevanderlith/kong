@@ -1,7 +1,7 @@
 package fakes
 
 import (
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/keys"
 	"github.com/louisevanderlith/kong/dict"
 	"github.com/louisevanderlith/kong/prime"
 )
@@ -18,7 +18,7 @@ func NewFakeProfiles() []prime.Profile {
 					Value: "https://facebook/x",
 				},
 			},
-			ImageKey: husk.CrazyKey(),
+			ImageKey: keys.CrazyKey(),
 			Clients: []prime.Client{
 				{
 					Name:         "viewr",

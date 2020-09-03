@@ -2,7 +2,7 @@ package prime
 
 import (
 	"fmt"
-	"github.com/louisevanderlith/husk"
+	"github.com/louisevanderlith/husk/validation"
 )
 
 type Contacts []Contact
@@ -25,5 +25,5 @@ type Contact struct {
 }
 
 func (c Contact) Valid() error {
-	return husk.ValidateStruct(&c)
+	return validation.ValidateStruct(c)
 }

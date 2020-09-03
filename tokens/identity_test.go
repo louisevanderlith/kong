@@ -66,7 +66,7 @@ func TestNewIdentity_HasClient(t *testing.T) {
 }
 
 func TestIdentity_GetCode(t *testing.T) {
-	clmr,err := NewIdentity("kong.test")
+	clmr, err := NewIdentity("kong.test")
 
 	if err != nil {
 		t.Error("New Identity Error", err)
