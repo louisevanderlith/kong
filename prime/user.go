@@ -55,7 +55,7 @@ func (u User) IsVerified() bool {
 }
 
 func (u User) Valid() error {
-	return validation.ValidateStruct(u)
+	return validation.Struct(u)
 }
 
 func (u User) VerifyPassword(password string) bool {
