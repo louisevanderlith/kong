@@ -25,5 +25,5 @@ type Contact struct {
 }
 
 func (c Contact) Valid() error {
-	return validation.ValidateStruct(c)
+	return validation.Struct(c)
 }

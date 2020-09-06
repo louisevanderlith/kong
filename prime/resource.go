@@ -30,7 +30,7 @@ func NewResource(name, displayName, secret string, needs []string, require rolet
 }
 
 func (r Resource) Valid() error {
-	return validation.ValidateStruct(r)
+	return validation.Struct(r)
 }
 
 func (r Resource) VerifySecret(secret string) bool {

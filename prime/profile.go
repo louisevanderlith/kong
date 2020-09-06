@@ -22,7 +22,7 @@ type Profile struct {
 }
 
 func (p Profile) Valid() error {
-	return validation.ValidateStruct(p)
+	return validation.Struct(p)
 }
 
 func (p Profile) GetClient(id string) (Client, error) {

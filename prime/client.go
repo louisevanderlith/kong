@@ -31,7 +31,7 @@ func NewClient(name, secret, url string, terms, codes bool, resources []string) 
 }
 
 func (c Client) Valid() error {
-	return validation.ValidateStruct(c)
+	return validation.Struct(c)
 }
 
 func (c Client) ResourceAllowed(resource string) bool {
