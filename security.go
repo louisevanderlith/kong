@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/prime/roletype"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
@@ -142,7 +141,7 @@ func (s security) RequestToken(id, secret, usrtkn string, resources map[string]b
 			return nil, err
 		}
 
-		if resrc.Require > roletype.Nobody && len(usrtkn) == 0 {
+		if len(resrc.Needs) > 0 && len(usrtkn) == 0 {
 			return nil, errors.New("invalid user token")
 		}
 	}

@@ -2,7 +2,6 @@ package prime
 
 import (
 	"github.com/louisevanderlith/husk/validation"
-	"github.com/louisevanderlith/kong/prime/roletype"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -11,10 +10,9 @@ type Resource struct {
 	DisplayName string `hsk:"size(50)"`
 	Secret      string
 	Needs       []string
-	Require     roletype.Enum `hsk:"null"`
 }
 
-func NewResource(name, displayName, secret string, needs []string, require roletype.Enum) Resource {
+func NewResource(name, displayName, secret string, needs []string) Resource {
 	scrt, err := bcrypt.GenerateFromPassword([]byte(secret), 11)
 	if err != nil {
 		panic(err)
@@ -25,7 +23,6 @@ func NewResource(name, displayName, secret string, needs []string, require rolet
 		DisplayName: displayName,
 		Secret:      string(scrt),
 		Needs:       needs,
-		Require:     require,
 	}
 }
 
