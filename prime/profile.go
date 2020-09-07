@@ -85,6 +85,9 @@ func (p Profile) ProvideClaim(claim string) (interface{}, error) {
 	case tokens.KongProfile:
 		return p.Title, nil
 	case tokens.KongLogo:
+		if p.ImageKey == nil {
+			return "0`0", nil
+		}
 		return p.ImageKey.String(), nil
 	case tokens.KongTerms:
 		return p.Terms, nil
