@@ -115,8 +115,8 @@ func (c *identity) GetCode(name string) (string, error) {
 		for i := 0; i < len(pairs); i++ {
 			kv := pairs[i].(map[string]interface{})
 
-			if kv["Key"] == name {
-				return kv["Value"].(string), nil
+			if kv["K"] == name {
+				return kv["V"].(string), nil
 			}
 		}
 	}
@@ -141,8 +141,8 @@ func (c *identity) GetTerm(name string) (string, error) {
 		for i := 0; i < len(pairs); i++ {
 			kv := pairs[i].(map[string]interface{})
 
-			if kv["Key"] == name {
-				return kv["Value"].(string), nil
+			if kv["K"] == name {
+				return kv["V"].(string), nil
 			}
 		}
 	}
