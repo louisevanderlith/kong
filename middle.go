@@ -3,6 +3,8 @@ package kong
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +13,12 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/louisevanderlith/kong/prime"
 )
 
+//InternalMiddleware is used by Security Manager, since there is no need to call an API
 func InternalMiddleware(securer Security, scope, secret string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tkn, err := GetBearerToken(r)
@@ -41,22 +45,48 @@ func InternalMiddleware(securer Security, scope, secret string, handle http.Hand
 	}
 }
 
-func ClientMiddleware(clnt *http.Client, id, secret, securityUrl, authorityUrl string, handle http.HandlerFunc, scopes map[string]bool) http.HandlerFunc {
+type ClientInspector struct {
+	id           string
+	secret       string
+	clnt         *http.Client
+	securityUrl  string
+	authorityUrl string
+}
+
+func NewClientInspector(id, secret string, clnt *http.Client, securityUrl, authorityUrl string) ClientInspector {
+	return ClientInspector{
+		id:           id,
+		secret:       secret,
+		clnt:         clnt,
+		securityUrl:  securityUrl,
+		authorityUrl: authorityUrl,
+	}
+}
+
+func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tkn, err := FetchToken(clnt, securityUrl, id, secret, scopes)
+		authCookie, _ := r.Cookie("auth")
+		usrToken := ""
+
+		if authCookie != nil {
+			usrToken = authCookie.Value
+		}
+
+		tkn, err := FetchToken(ci.clnt, ci.securityUrl, ci.id, ci.secret, usrToken, scopes)
 
 		if err != nil {
 			status, err := strconv.Atoi(err.Error())
 
 			if err != nil {
-				log.Println("Atoi Error", err)
+				log.Println("Conversion Error", err)
 				http.Error(w, "", http.StatusInternalServerError)
 				return
 			}
 
 			if status == http.StatusUnprocessableEntity {
 				cbUrl := fmt.Sprintf("https://%s/callback", r.Host)
-				consntUrl := fmt.Sprintf("%s/consent?client=%s&callback=%s", authorityUrl, id, cbUrl)
+				state := generateStateOauthCookie(w)
+				consntUrl := fmt.Sprintf("%s/consent?state=%s&client=%s&callback=%s", ci.authorityUrl, state, ci.id, cbUrl)
 				http.Redirect(w, r, consntUrl, http.StatusTemporaryRedirect)
 				return
 			}
@@ -65,7 +95,7 @@ func ClientMiddleware(clnt *http.Client, id, secret, securityUrl, authorityUrl s
 			return
 		}
 
-		claims, err := FetchIdentity(http.DefaultClient, []byte(tkn), securityUrl+"/info", id, secret)
+		claims, err := FetchIdentity(http.DefaultClient, []byte(tkn), ci.securityUrl+"/info", ci.id, ci.secret)
 
 		if err != nil {
 			log.Println("Exchange Error", err)
@@ -79,6 +109,39 @@ func ClientMiddleware(clnt *http.Client, id, secret, securityUrl, authorityUrl s
 		r = r.WithContext(tidn)
 		handle(w, r)
 	}
+}
+
+func (ci ClientInspector) Callback(w http.ResponseWriter, r *http.Request) {
+	oauthState, _ := r.Cookie("state")
+
+	state := r.URL.Query()["state"]
+
+	if state[0] != oauthState.Value {
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
+	token := r.URL.Query()["token"]
+	saveUserTokenCookie(w, token[0])
+}
+
+func saveUserTokenCookie(w http.ResponseWriter, usrToken string) {
+	var expiration = time.Now().Add(1 * time.Hour)
+
+	cookie := http.Cookie{Name: "user", Value: usrToken, Expires: expiration}
+	http.SetCookie(w, &cookie)
+}
+
+func generateStateOauthCookie(w http.ResponseWriter) string {
+	var expiration = time.Now().Add(1 * time.Hour)
+
+	b := make([]byte, 16)
+	rand.Read(b)
+	state := base64.URLEncoding.EncodeToString(b)
+	cookie := http.Cookie{Name: "state", Value: state, Expires: expiration}
+	http.SetCookie(w, &cookie)
+
+	return state
 }
 
 type ResourceInspector struct {
@@ -157,9 +220,9 @@ func GetBearerToken(r *http.Request) (string, error) {
 }
 
 //FetchToken calls the Security Token endpoint to obtain a Client Token
-func FetchToken(clnt *http.Client, securityUrl, clientId, secret string, scopes map[string]bool) (string, error) {
+func FetchToken(clnt *http.Client, securityUrl, clientId, secret, userToken string, scopes map[string]bool) (string, error) {
 	tknReq := prime.QueryRequest{
-		Token:  "",
+		Token:  userToken,
 		Claims: scopes,
 	}
 	obj, err := json.Marshal(tknReq)

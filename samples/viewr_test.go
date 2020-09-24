@@ -18,7 +18,8 @@ func TestHandleIndexGET_LoginRequired(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
-	handl := kong.ClientMiddleware(ts.Client(), "kong.viewr", "secret", ts.URL, authS.URL, viewr.HandleIndexGET, map[string]bool{"api.user.view": true})
+	clntIns := kong.NewClientInspector("kong.viewr", "secret", ts.Client(), ts.URL, authS.URL)
+	handl := clntIns.Middleware(viewr.HandleIndexGET, map[string]bool{"api.user.view": true})
 	handl(rr, req)
 
 	if rr.Code != http.StatusTemporaryRedirect {
