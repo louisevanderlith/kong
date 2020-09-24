@@ -52,7 +52,8 @@ func GetSecureRoutes(securer kong.Security) http.Handler {
 func GetViewrRoutes(clnt *http.Client, securityUrl, authorityUrl string) http.Handler {
 	r := mux.NewRouter()
 
-	appMdl := kong.ClientMiddleware(clnt, "client.viewr", "secret", securityUrl, authorityUrl, viewr.HandleIndexGET, nil)
+	clntInsp := kong.NewClientInspector("client.viewr", "secret", clnt, securityUrl, authorityUrl)
+	appMdl := clntInsp.Middleware(viewr.HandleIndexGET, nil)
 	r.HandleFunc("/", appMdl).Methods(http.MethodGet)
 	r.HandleFunc("/callback", viewr.HandleCallbackGET).Queries("ut", "{ut:[a-zA-Z0-9]+}").Methods(http.MethodGet)
 
