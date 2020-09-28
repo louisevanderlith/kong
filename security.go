@@ -39,6 +39,10 @@ func (s security) Sign(claims tokens.Claims, exp time.Duration) (string, error) 
 func (s security) QueryClient(partial string) (prime.ClientQuery, error) {
 	idn, err := tokens.OpenIdentity(s.key, partial)
 
+	if err != nil {
+		return prime.ClientQuery{}, err
+	}
+
 	if !idn.HasUser() {
 		return prime.ClientQuery{}, errors.New("no user found in token")
 	}
