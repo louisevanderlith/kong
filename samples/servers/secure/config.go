@@ -3,9 +3,10 @@ package secure
 import (
 	"github.com/louisevanderlith/kong"
 	"github.com/louisevanderlith/kong/fakes"
+	"github.com/louisevanderlith/kong/middle"
 )
 
-var Security kong.Security
+var Security middle.Security
 
 func init() {
 	//gob.Register(tokens.Claims)

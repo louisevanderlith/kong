@@ -3,28 +3,19 @@ package kong
 import (
 	"errors"
 	"fmt"
-	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/middle"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
 	"time"
 )
 
-//Security controls Client and Resource authentication
-type Security interface {
-	tokens.Signer
-	IdentityInsider
-	RequestToken(id, secret, ut string, resources map[string]bool) (tokens.Identity, error)
-	QueryClient(partial string) (prime.ClientQuery, error)
-	Whitelist(resource, secret string) ([]string, error)
-}
-
 type security struct {
 	Store stores.SecureStore
 	key   []byte //must be 32byte
 }
 
-func CreateSecurity(store stores.SecureStore) (Security, error) {
+func CreateSecurity(store stores.SecureStore) (middle.Security, error) {
 	return security{
 		Store: store,
 		key:   tokens.GenerateKey(32),
@@ -36,37 +27,20 @@ func (s security) Sign(claims tokens.Claims, exp time.Duration) (string, error) 
 	return tokens.IssueClaims(s.key, claims, exp)
 }
 
-func (s security) QueryClient(partial string) (prime.ClientQuery, error) {
-	idn, err := tokens.OpenIdentity(s.key, partial)
+func (s security) ClientResourceQuery(clientId string) (map[string][]string, error) {
+	_, clnt, err := s.Store.GetProfileClient(clientId)
 
 	if err != nil {
-		return prime.ClientQuery{}, err
+		return nil, err
 	}
 
-	if !idn.HasUser() {
-		return prime.ClientQuery{}, errors.New("no user found in token")
-	}
-
-	if idn.IsExpired() {
-		return prime.ClientQuery{}, errors.New("partial token expired")
-	}
-
-	_, clnt, err := s.Store.GetProfileClient(idn.GetID())
-
-	if err != nil {
-		return prime.ClientQuery{}, err
-	}
-
-	result := prime.ClientQuery{
-		Username: "nobody",
-		Consent:  make(map[string][]string),
-	}
+	result := make(map[string][]string)
 
 	for _, v := range clnt.AllowedResources {
 		rsrc, err := s.Store.GetResource(v)
 
 		if err != nil {
-			return prime.ClientQuery{}, err
+			return nil, err
 		}
 
 		var concern []string
@@ -75,7 +49,7 @@ func (s security) QueryClient(partial string) (prime.ClientQuery, error) {
 			concern = append(concern, n)
 		}
 
-		result.Consent[rsrc.DisplayName] = concern
+		result[rsrc.DisplayName] = concern
 	}
 
 	return result, nil

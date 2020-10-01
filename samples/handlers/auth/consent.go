@@ -19,7 +19,7 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ut, ok := sessn.Values["user.token"]
+	_, ok := sessn.Values["user.token"]
 
 	if !ok {
 		log.Println(err)
@@ -27,8 +27,8 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := prime.QueryRequest{Token: ut.(string)}
-	user, concern, err := auth.Authority.ClientQuery(req)
+	//req := prime.QueryRequest{Token: ut.(string)}
+	concern, err := auth.Authority.ClientQuery("mango.viewr")
 
 	if err != nil {
 		log.Println("Client Query Error", err)
@@ -64,7 +64,50 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", user, clnts[0], items.String())
+	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", "username", clnts[0], items.String())
+	io.WriteString(w, tmpl)
+}
+
+func HandleUserConsentGET(w http.ResponseWriter, r *http.Request) {
+
+	//req := prime.QueryRequest{Token: ut.(string)}
+	concern, err := auth.Authority.ClientQuery("kong.viewr")
+
+	if err != nil {
+		log.Println("Client Query Error", err)
+		http.Error(w, "", http.StatusInternalServerError)
+		return
+	}
+
+	items := strings.Builder{}
+
+	for k, v := range concern {
+		parnt := fmt.Sprintf("<li>%s<ul>", k)
+		items.WriteString(parnt)
+
+		for _, n := range v {
+			li := fmt.Sprintf("<li><input type=\"checkbox\" checked value=\"%v\"/></li>", n)
+			items.WriteString(li)
+		}
+
+		items.WriteString("</ul></li>")
+	}
+
+	clnts := r.URL.Query()["client"]
+
+	if len(clnts) == 0 {
+		http.Error(w, "no client query", http.StatusBadRequest)
+		return
+	}
+
+	cbUrls := r.URL.Query()["callback"]
+
+	if len(cbUrls) == 0 {
+		http.Error(w, "no callback query", http.StatusBadRequest)
+		return
+	}
+
+	tmpl := fmt.Sprintf("<html><body><span>Hello %s</span><p>%s requires access to the following:</p> <ul>%s</ul></body></html>", "username", clnts[0], items.String())
 	io.WriteString(w, tmpl)
 }
 

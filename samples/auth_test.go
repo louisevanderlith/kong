@@ -87,3 +87,41 @@ func TestHandleLoginPOST(t *testing.T) {
 		t.Error("user token is empty")
 	}
 }
+
+func TestHandleConsentGET_NoUser(t *testing.T) {
+	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	defer ts.Close()
+
+	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
+	defer tm.Close()
+
+	ut, err := ObtainUserLogin(tm, ts, "kong.viewr", "user@fake.com", "user1pass")
+
+	if err != nil {
+		t.Error("Obtain Login Error", err)
+		return
+	}
+
+	if len(ut) == 0 {
+		t.Error("user token is empty")
+	}
+}
+
+func TestHandleConsentGET_User(t *testing.T) {
+	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	defer ts.Close()
+
+	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
+	defer tm.Close()
+
+	ut, err := ObtainUserLogin(tm, ts, "kong.viewr", "user@fake.com", "user1pass")
+
+	if err != nil {
+		t.Error("Obtain Login Error", err)
+		return
+	}
+
+	if len(ut) == 0 {
+		t.Error("user token is empty")
+	}
+}
