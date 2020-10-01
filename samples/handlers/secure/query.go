@@ -2,31 +2,23 @@ package secure
 
 import (
 	"encoding/json"
-	"github.com/louisevanderlith/kong/prime"
+	"github.com/gorilla/mux"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"log"
 	"net/http"
 )
 
-func HandleClientQueryPOST(w http.ResponseWriter, r *http.Request) {
-	obj := prime.QueryRequest{}
-	decoder := json.NewDecoder(r.Body)
+func HandleClientQueryGET(w http.ResponseWriter, r *http.Request) {
+	client := mux.Vars(r)["client"]
 
-	err := decoder.Decode(&obj)
-
-	if err != nil {
-		log.Println("Bind Error", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	res, err := secure.Security.QueryClient(obj.Token)
+	res, err := secure.Security.ClientResourceQuery(client)
 
 	if err != nil {
 		log.Println("Query Client Error", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+
 	bits, err := json.Marshal(res)
 
 	if err != nil {

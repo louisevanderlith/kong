@@ -1,7 +1,7 @@
 package samples
 
 import (
-	"github.com/louisevanderlith/kong"
+	"github.com/louisevanderlith/kong/middle"
 	"github.com/louisevanderlith/kong/samples/handlers/viewr"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"net/http"
@@ -18,7 +18,7 @@ func TestHandleIndexGET_LoginRequired(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
-	clntIns := kong.NewClientInspector("kong.viewr", "secret", ts.Client(), ts.URL, authS.URL)
+	clntIns := middle.NewClientInspector("kong.viewr", "secret", ts.Client(), ts.URL, authS.URL)
 	handl := clntIns.Middleware(viewr.HandleIndexGET, map[string]bool{"api.user.view": true})
 	handl(rr, req)
 

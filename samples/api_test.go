@@ -2,15 +2,13 @@ package samples
 
 import (
 	"encoding/json"
+	"github.com/louisevanderlith/kong/middle"
 	"github.com/louisevanderlith/kong/samples/handlers/api"
 	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"github.com/louisevanderlith/kong/tokens"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/louisevanderlith/kong"
 )
 
 func TestResource_Middleware_SetContext(t *testing.T) {
@@ -28,7 +26,7 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	ins := kong.NewResourceInspector(ts.Client(), ts.URL, "")
+	ins := middle.NewResourceInspector(ts.Client(), ts.URL, "")
 	handle := ins.Middleware("api.profile.view", "secret", api.HandleProfileGET)
 	handle(rr, req)
 
@@ -67,7 +65,7 @@ func TestResource_Middleware_SetContext_ForUsers(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	ins := kong.NewResourceInspector(ts.Client(), ts.URL, tm.URL)
+	ins := middle.NewResourceInspector(ts.Client(), ts.URL, tm.URL)
 	handle := ins.Middleware("api.user.view", "secret", api.HandleUserGET)
 	handle(rr, req)
 
@@ -84,7 +82,6 @@ func TestResource_Middleware_SetContext_ForUsers(t *testing.T) {
 		return
 	}
 
-	log.Println("CLMS", result)
 	usrname := result.GetClaimString(tokens.UserName)
 	if usrname != "User 1" {
 		t.Error("unexpected value", usrname)

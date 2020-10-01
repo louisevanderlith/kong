@@ -10,7 +10,7 @@ import (
 
 // Authority provides functions for connecting Security & User Manager functions
 type Authority interface {
-	ClientQuery(request prime.QueryRequest) (string, map[string][]string, error)
+	ClientQuery(client string) (map[string][]string, error)
 	GiveConsent(request prime.QueryRequest) (string, error)
 	AuthenticateUser(request prime.LoginRequest) (string, error)
 }
@@ -28,41 +28,36 @@ func NewAuthority(client *http.Client, securityUrl, managerUrl, authTkn string) 
 }
 
 //ClientQuery returns the username and the client's required claims
-func (a authority) ClientQuery(request prime.QueryRequest) (string, map[string][]string, error) {
-	bits, err := json.Marshal(request)
-
-	if err != nil {
-		return "", nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, a.securityUrl+"/query", bytes.NewBuffer(bits))
+func (a authority) ClientQuery(client string) (map[string][]string, error) {
+	fullUrl := fmt.Sprintf("%s/query/%s", a.securityUrl, client)
+	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
 	req.Header.Set("Authorization", "Bearer "+a.tkn)
 
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	resp, err := a.clnt.Do(req)
 
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", nil, fmt.Errorf("%s", resp.Status)
+		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
-	qry := prime.ClientQuery{}
+	qry := make(map[string][]string)
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&qry)
 
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	return qry.Username, qry.Consent, nil
+	return qry, nil
 }
 
 //GiveConsent returns a signed user token

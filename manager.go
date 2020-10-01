@@ -3,6 +3,7 @@ package kong
 import (
 	"errors"
 	"fmt"
+	"github.com/louisevanderlith/kong/middle"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
@@ -13,7 +14,7 @@ import (
 //Manager controls User authentication
 type Manager interface {
 	tokens.Signer
-	UserInsider
+	middle.UserInsider
 	Login(id, username, password string) (tokens.UserIdentity, error)              //partial token
 	Consent(usrToken string, consent map[string]bool) (tokens.UserIdentity, error) //finalize token
 	FetchNeeds(usrToken string, needs ...string) (tokens.UserIdentity, error)
