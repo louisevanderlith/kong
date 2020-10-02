@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,15 +16,17 @@ type ClientInspector struct {
 	secret       string
 	clnt         *http.Client
 	securityUrl  string
+	managerUrl   string
 	authorityUrl string
 }
 
-func NewClientInspector(id, secret string, clnt *http.Client, securityUrl, authorityUrl string) ClientInspector {
+func NewClientInspector(id, secret string, clnt *http.Client, securityUrl, managerUrl, authorityUrl string) ClientInspector {
 	return ClientInspector{
 		id:           id,
 		secret:       secret,
 		clnt:         clnt,
 		securityUrl:  securityUrl,
+		managerUrl:   managerUrl,
 		authorityUrl: authorityUrl,
 	}
 }
@@ -68,6 +71,18 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 
 		idn := context.WithValue(r.Context(), "claims", claims)
 		tidn := context.WithValue(idn, "token", tkn)
+
+		if claims.HasUser() && len(ci.managerUrl) > 0 {
+			usrclaims, err := FetchUserIdentity(http.DefaultClient, []byte(claims.GetUserToken()), []byte(tkn), ci.managerUrl)
+
+			if err != nil {
+				log.Println("User Exchange Error", err)
+				http.Error(w, "", http.StatusUnauthorized)
+			}
+
+			idn := context.WithValue(r.Context(), "userclaims", usrclaims)
+			r = r.WithContext(idn)
+		}
 
 		r = r.WithContext(tidn)
 		handle(w, r)

@@ -16,9 +16,11 @@ func TestHandleIndexGET_LoginRequired(t *testing.T) {
 	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
 	defer ts.Close()
 
+	ms := httptest.NewServer(GetManagerRoutes(ts.Client(), ts.URL))
+
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rr := httptest.NewRecorder()
-	clntIns := middle.NewClientInspector("kong.viewr", "secret", ts.Client(), ts.URL, authS.URL)
+	clntIns := middle.NewClientInspector("kong.viewr", "secret", ts.Client(), ts.URL, ms.URL, authS.URL)
 	handl := clntIns.Middleware(viewr.HandleIndexGET, map[string]bool{"api.user.view": true})
 	handl(rr, req)
 
