@@ -30,7 +30,7 @@ func NewClientInspector(id, secret string, clnt *http.Client, securityUrl, autho
 
 func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authCookie, _ := r.Cookie("auth")
+		authCookie, _ := r.Cookie("user")
 		usrToken := ""
 
 		if authCookie != nil {
