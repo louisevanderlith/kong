@@ -52,10 +52,10 @@ func GetSecureRoutes(securer middle.Security) http.Handler {
 }
 
 //GetViewrRoutes returns a router for the Sample UI
-func GetViewrRoutes(clnt *http.Client, securityUrl, authorityUrl string) http.Handler {
+func GetViewrRoutes(clnt *http.Client, securityUrl, managerUrl, authorityUrl string) http.Handler {
 	r := mux.NewRouter()
 
-	clntInsp := middle.NewClientInspector("client.viewr", "secret", clnt, securityUrl, authorityUrl)
+	clntInsp := middle.NewClientInspector("client.viewr", "secret", clnt, securityUrl, managerUrl, authorityUrl)
 	appMdl := clntInsp.Middleware(viewr.HandleIndexGET, nil)
 	r.HandleFunc("/", appMdl).Methods(http.MethodGet)
 	r.HandleFunc("/callback", viewr.HandleCallbackGET).Queries("ut", "{ut:[a-zA-Z0-9]+}").Methods(http.MethodGet)
