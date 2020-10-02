@@ -43,7 +43,7 @@ func (ins ResourceInspector) Middleware(scope, secret string, handle http.Handle
 		r = r.WithContext(idn)
 
 		if claims.HasUser() && len(ins.managerUrl) > 0 {
-			usrclaims, err := FetchUserIdentity(ins.clnt, []byte(claims.GetUserToken()), []byte(token), ins.managerUrl)
+			usrclaims, err := FetchUserIdentity(ins.clnt, []byte(token), ins.managerUrl)
 
 			if err != nil {
 				log.Println("User Exchange Error", err)

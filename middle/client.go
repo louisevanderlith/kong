@@ -73,11 +73,12 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 		tidn := context.WithValue(idn, "token", tkn)
 
 		if claims.HasUser() && len(ci.managerUrl) > 0 {
-			usrclaims, err := FetchUserIdentity(http.DefaultClient, []byte(claims.GetUserToken()), []byte(tkn), ci.managerUrl)
+			usrclaims, err := FetchUserIdentity(http.DefaultClient, []byte(tkn), ci.managerUrl)
 
 			if err != nil {
 				log.Println("User Exchange Error", err)
 				http.Error(w, "", http.StatusUnauthorized)
+				return
 			}
 
 			idn := context.WithValue(r.Context(), "userclaims", usrclaims)

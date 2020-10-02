@@ -105,19 +105,12 @@ func FetchIdentity(clnt *http.Client, token []byte, inspectUrl string, name stri
 }
 
 //FetchUserIdentity return the User token identity
-func FetchUserIdentity(clnt *http.Client, usrToken, token []byte, managerUrl string) (tokens.UserIdentity, error) {
-	if len(usrToken) == 0 {
-		return nil, errors.New("user token is empty")
+func FetchUserIdentity(clnt *http.Client, token []byte, managerUrl string) (tokens.UserIdentity, error) {
+	if len(token) == 0 {
+		return nil, errors.New("token is empty")
 	}
 
-	data := prime.QueryRequest{Token: string(usrToken)}
-	bits, err := json.Marshal(data)
-
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, managerUrl+"/insight", bytes.NewBuffer(bits))
+	req, err := http.NewRequest(http.MethodGet, managerUrl+"/insight", nil)
 	req.Header.Set("Authorization", "Bearer "+string(token))
 
 	if err != nil {
