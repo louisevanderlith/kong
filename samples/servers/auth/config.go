@@ -12,7 +12,7 @@ var (
 	Authority    kong.Authority
 )
 
-func SetupAuthServer(clnt *http.Client, securityUrl, managerUrl, token string) {
+func SetupAuthServer(clnt *http.Client, securityUrl, managerUrl, id, secret string) {
 	stor := sessions.NewCookieStore(
 		securecookie.GenerateRandomKey(64),
 		securecookie.GenerateRandomKey(32),
@@ -22,5 +22,5 @@ func SetupAuthServer(clnt *http.Client, securityUrl, managerUrl, token string) {
 	stor.Options.HttpOnly = true
 
 	SessionStore = stor
-	Authority = kong.NewAuthority(clnt, securityUrl, managerUrl, token)
+	Authority = kong.NewAuthority(clnt, securityUrl, managerUrl, id, secret)
 }
