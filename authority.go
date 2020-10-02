@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/louisevanderlith/kong/middle"
 	"github.com/louisevanderlith/kong/prime"
 	"net/http"
 )
@@ -17,21 +18,28 @@ type Authority interface {
 
 type authority struct {
 	clnt        *http.Client
-	tkn         string
+	id          string
+	secret      string
 	securityUrl string
 	managerUrl  string
 }
 
 //NewAuthority returns a client which can call the Secure & Entity server's API
-func NewAuthority(client *http.Client, securityUrl, managerUrl, authTkn string) Authority {
-	return authority{clnt: client, tkn: authTkn, securityUrl: securityUrl, managerUrl: managerUrl}
+func NewAuthority(client *http.Client, securityUrl, managerUrl, id, secret string) Authority {
+	return authority{clnt: client, id: id, secret: secret, securityUrl: securityUrl, managerUrl: managerUrl}
 }
 
 //ClientQuery returns the username and the client's required claims
 func (a authority) ClientQuery(client string) (map[string][]string, error) {
+	tkn, err := middle.FetchToken(http.DefaultClient, a.securityUrl, a.id, a.secret, "", map[string]bool{"secure.client.query": true})
+
+	if err != nil {
+		return nil, err
+	}
+
 	fullUrl := fmt.Sprintf("%s/query/%s", a.securityUrl, client)
 	req, err := http.NewRequest(http.MethodGet, fullUrl, nil)
-	req.Header.Set("Authorization", "Bearer "+a.tkn)
+	req.Header.Set("Authorization", "Bearer "+tkn)
 
 	if err != nil {
 		return nil, err
@@ -62,6 +70,12 @@ func (a authority) ClientQuery(client string) (map[string][]string, error) {
 
 //GiveConsent returns a signed user token
 func (a authority) GiveConsent(request prime.QueryRequest) (string, error) {
+	tkn, err := middle.FetchToken(http.DefaultClient, a.securityUrl, a.id, a.secret, "", map[string]bool{"entity.consent.apply": true})
+
+	if err != nil {
+		return "", err
+	}
+
 	bits, err := json.Marshal(request)
 
 	if err != nil {
@@ -69,7 +83,7 @@ func (a authority) GiveConsent(request prime.QueryRequest) (string, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodPost, a.managerUrl+"/consent", bytes.NewBuffer(bits))
-	req.Header.Set("Authorization", "Bearer "+a.tkn)
+	req.Header.Set("Authorization", "Bearer "+tkn)
 
 	if err != nil {
 		return "", err
@@ -100,6 +114,12 @@ func (a authority) GiveConsent(request prime.QueryRequest) (string, error) {
 
 //AuthenticateUser returns a signed partial user token
 func (a authority) AuthenticateUser(request prime.LoginRequest) (string, error) {
+	tkn, err := middle.FetchToken(http.DefaultClient, a.securityUrl, a.id, a.secret, "", map[string]bool{"entity.login.apply": true})
+
+	if err != nil {
+		return "", err
+	}
+
 	bits, err := json.Marshal(request)
 
 	if err != nil {
@@ -107,7 +127,7 @@ func (a authority) AuthenticateUser(request prime.LoginRequest) (string, error) 
 	}
 
 	req, err := http.NewRequest(http.MethodPost, a.managerUrl+"/login", bytes.NewBuffer(bits))
-	req.Header.Set("Authorization", "Bearer "+a.tkn)
+	req.Header.Set("Authorization", "Bearer "+tkn)
 
 	if err != nil {
 		return "", err
