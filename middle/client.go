@@ -86,6 +86,8 @@ func (ci ClientInspector) Callback(w http.ResponseWriter, r *http.Request) {
 
 	token := r.URL.Query()["token"]
 	saveUserTokenCookie(w, token[0])
+
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 func saveUserTokenCookie(w http.ResponseWriter, usrToken string) {
