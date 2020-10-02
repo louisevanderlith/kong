@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/louisevanderlith/kong/middle"
-	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
 	"log"
@@ -30,8 +29,8 @@ type manager struct {
 }
 
 //Insight for Clients and Resources, they've already proved they can open an identity.
-func (m manager) Insight(request prime.QueryRequest) (tokens.Claims, error) {
-	clms, err := tokens.OpenUserIdentity(m.key, request.Token)
+func (m manager) Insight(usertoken string) (tokens.Claims, error) {
+	clms, err := tokens.OpenUserIdentity(m.key, usertoken)
 
 	if err != nil {
 		return nil, err

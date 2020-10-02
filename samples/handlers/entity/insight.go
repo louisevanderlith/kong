@@ -20,7 +20,7 @@ func HandleInsightPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ut, err := entity.Manager.Insight(obj)
+	ut, err := entity.Manager.Insight(obj.Token)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

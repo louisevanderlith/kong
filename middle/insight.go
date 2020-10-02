@@ -1,7 +1,6 @@
 package middle
 
 import (
-	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/tokens"
 )
 
@@ -13,7 +12,7 @@ type IdentityInsider interface {
 
 //UserInsider
 type UserInsider interface {
-	Insight(request prime.QueryRequest) (tokens.Claims, error)
+	Insight(usertoken string) (tokens.Claims, error)
 }
 
 //Security controls Client and Resource authentication
