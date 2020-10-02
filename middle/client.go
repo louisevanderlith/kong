@@ -81,11 +81,12 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 				return
 			}
 
-			idn := context.WithValue(r.Context(), "userclaims", usrclaims)
-			r = r.WithContext(idn)
+			uidn := context.WithValue(tidn, "userclaims", usrclaims)
+			r = r.WithContext(uidn)
+		} else {
+			r = r.WithContext(tidn)
 		}
 
-		r = r.WithContext(tidn)
 		handle(w, r)
 	}
 }
