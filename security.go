@@ -28,23 +28,27 @@ func (s security) Sign(claims tokens.Claims, exp time.Duration) (string, error) 
 	return tokens.IssueClaims(s.key, claims, exp)
 }
 
-func (s security) ClientResourceQuery(clientId string) ([]prime.Resource, error) {
+func (s security) ClientResourceQuery(clientId string) (prime.ClaimConsent, error) {
 	_, clnt, err := s.Store.GetProfileClient(clientId)
 
 	if err != nil {
-		return nil, err
+		return prime.ClaimConsent{}, err
 	}
 
-	var result []prime.Resource
+	result := prime.ClaimConsent{
+		Client: clnt.Name,
+	}
 
 	for _, v := range clnt.AllowedResources {
 		rsrc, err := s.Store.GetResource(v)
 
 		if err != nil {
-			return nil, err
+			return prime.ClaimConsent{}, err
 		}
 
-		result = append(result, rsrc)
+		for _, n := range rsrc.Needs {
+			result.Needs[n] = append(result.Needs[n], rsrc.DisplayName)
+		}
 	}
 
 	return result, nil

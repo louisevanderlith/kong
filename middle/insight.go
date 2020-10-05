@@ -21,6 +21,6 @@ type Security interface {
 	tokens.Signer
 	IdentityInsider
 	RequestToken(id, secret, ut string, resources map[string]bool) (tokens.Identity, error)
-	ClientResourceQuery(clientId string) ([]prime.Resource, error)
+	ClientResourceQuery(clientId string) (prime.ClaimConsent, error)
 	Whitelist(resource, secret string) ([]string, error)
 }

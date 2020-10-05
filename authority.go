@@ -11,7 +11,7 @@ import (
 
 // Authority provides functions for connecting Security & User Manager functions
 type Authority interface {
-	ClientQuery(client string) ([]prime.Resource, error)
+	ClientQuery(client string) (prime.ClaimConsent, error)
 	GiveConsent(request prime.QueryRequest) (string, error)
 	AuthenticateUser(request prime.LoginRequest) (string, error)
 }
@@ -30,11 +30,11 @@ func NewAuthority(client *http.Client, securityUrl, managerUrl, id, secret strin
 }
 
 //ClientQuery returns the username and the client's required claims
-func (a authority) ClientQuery(client string) ([]prime.Resource, error) {
+func (a authority) ClientQuery(client string) (prime.ClaimConsent, error) {
 	tkn, err := middle.FetchToken(http.DefaultClient, a.securityUrl, a.id, a.secret, "", map[string]bool{"secure.client.query": true})
 
 	if err != nil {
-		return nil, err
+		return prime.ClaimConsent{}, err
 	}
 
 	fullUrl := fmt.Sprintf("%s/query/%s", a.securityUrl, client)
@@ -42,27 +42,27 @@ func (a authority) ClientQuery(client string) ([]prime.Resource, error) {
 	req.Header.Set("Authorization", "Bearer "+tkn)
 
 	if err != nil {
-		return nil, err
+		return prime.ClaimConsent{}, err
 	}
 
 	resp, err := a.clnt.Do(req)
 
 	if err != nil {
-		return nil, err
+		return prime.ClaimConsent{}, err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s", resp.Status)
+		return prime.ClaimConsent{}, fmt.Errorf("%s", resp.Status)
 	}
 
-	var qry []prime.Resource
+	qry := prime.ClaimConsent{}
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&qry)
 
 	if err != nil {
-		return nil, err
+		return prime.ClaimConsent{}, err
 	}
 
 	return qry, nil
