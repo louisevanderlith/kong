@@ -42,10 +42,8 @@ func HandleConsentGET(w http.ResponseWriter, r *http.Request) {
 		parnt := fmt.Sprintf("<li>%s<ul>", k)
 		items.WriteString(parnt)
 
-		for _, n := range v {
-			li := fmt.Sprintf("<li><input type=\"checkbox\" checked value=\"%v\"/></li>", n)
-			items.WriteString(li)
-		}
+		li := fmt.Sprintf("<li><input type=\"checkbox\" checked value=\"%v\"/></li>", v.Name)
+		items.WriteString(li)
 
 		items.WriteString("</ul></li>")
 	}
@@ -85,10 +83,8 @@ func HandleUserConsentGET(w http.ResponseWriter, r *http.Request) {
 		parnt := fmt.Sprintf("<li>%s<ul>", k)
 		items.WriteString(parnt)
 
-		for _, n := range v {
-			li := fmt.Sprintf("<li><input type=\"checkbox\" checked value=\"%v\"/></li>", n)
-			items.WriteString(li)
-		}
+		li := fmt.Sprintf("<li><input type=\"checkbox\" checked value=\"%v\"/></li>", v.Name)
+		items.WriteString(li)
 
 		items.WriteString("</ul></li>")
 	}
