@@ -104,7 +104,7 @@ func (s security) RequestToken(id, secret, usrtkn string, resources map[string]b
 
 	for rsrc, must := range resources {
 		if !clnt.ResourceAllowed(rsrc) {
-			msg := "scope not allowed"
+			msg := fmt.Sprintf("scope %s not allowed", rsrc)
 
 			if must {
 				msg = "required " + msg
