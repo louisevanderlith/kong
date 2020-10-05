@@ -11,7 +11,7 @@ import (
 
 // Authority provides functions for connecting Security & User Manager functions
 type Authority interface {
-	ClientQuery(client string) (map[string][]string, error)
+	ClientQuery(client string) ([]prime.Resource, error)
 	GiveConsent(request prime.QueryRequest) (string, error)
 	AuthenticateUser(request prime.LoginRequest) (string, error)
 }
@@ -30,7 +30,7 @@ func NewAuthority(client *http.Client, securityUrl, managerUrl, id, secret strin
 }
 
 //ClientQuery returns the username and the client's required claims
-func (a authority) ClientQuery(client string) (map[string][]string, error) {
+func (a authority) ClientQuery(client string) ([]prime.Resource, error) {
 	tkn, err := middle.FetchToken(http.DefaultClient, a.securityUrl, a.id, a.secret, "", map[string]bool{"secure.client.query": true})
 
 	if err != nil {
@@ -57,7 +57,7 @@ func (a authority) ClientQuery(client string) (map[string][]string, error) {
 		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
-	qry := make(map[string][]string)
+	var qry []prime.Resource
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&qry)
 
