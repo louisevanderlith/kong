@@ -1,6 +1,7 @@
 package middle
 
 import (
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/tokens"
 )
 
@@ -20,6 +21,6 @@ type Security interface {
 	tokens.Signer
 	IdentityInsider
 	RequestToken(id, secret, ut string, resources map[string]bool) (tokens.Identity, error)
-	ClientResourceQuery(clientId string) (map[string][]string, error)
+	ClientResourceQuery(clientId string) ([]prime.Resource, error)
 	Whitelist(resource, secret string) ([]string, error)
 }

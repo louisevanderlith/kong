@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/louisevanderlith/kong/middle"
+	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
 	"strings"
@@ -27,14 +28,14 @@ func (s security) Sign(claims tokens.Claims, exp time.Duration) (string, error) 
 	return tokens.IssueClaims(s.key, claims, exp)
 }
 
-func (s security) ClientResourceQuery(clientId string) (map[string][]string, error) {
+func (s security) ClientResourceQuery(clientId string) ([]prime.Resource, error) {
 	_, clnt, err := s.Store.GetProfileClient(clientId)
 
 	if err != nil {
 		return nil, err
 	}
 
-	result := make(map[string][]string)
+	var result []prime.Resource
 
 	for _, v := range clnt.AllowedResources {
 		rsrc, err := s.Store.GetResource(v)
@@ -43,13 +44,7 @@ func (s security) ClientResourceQuery(clientId string) (map[string][]string, err
 			return nil, err
 		}
 
-		var concern []string
-
-		for _, n := range rsrc.Needs {
-			concern = append(concern, n)
-		}
-
-		result[rsrc.DisplayName] = concern
+		result = append(result, rsrc)
 	}
 
 	return result, nil
