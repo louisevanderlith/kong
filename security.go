@@ -37,6 +37,7 @@ func (s security) ClientResourceQuery(clientId string) (prime.ClaimConsent, erro
 
 	result := prime.ClaimConsent{
 		Client: clnt.Name,
+		Needs:  make(map[string][]string),
 	}
 
 	for _, v := range clnt.AllowedResources {
