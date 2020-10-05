@@ -48,6 +48,11 @@ func FetchToken(clnt *http.Client, securityUrl, clientId, secret, userToken stri
 	}
 
 	req, err := http.NewRequest(http.MethodPost, securityUrl+"/token", bytes.NewBuffer(obj))
+
+	if err != nil {
+		return "", err
+	}
+
 	req.SetBasicAuth(clientId, secret)
 
 	if err != nil {
@@ -78,12 +83,18 @@ func FetchToken(clnt *http.Client, securityUrl, clientId, secret, userToken stri
 func FetchIdentity(clnt *http.Client, token []byte, inspectUrl string, name string, secret string) (tokens.Identity, error) {
 	insReq := prime.QueryRequest{Token: string(token)}
 	obj, err := json.Marshal(insReq)
-	req, err := http.NewRequest(http.MethodPost, inspectUrl, bytes.NewBuffer(obj))
-	req.SetBasicAuth(name, secret)
 
 	if err != nil {
 		return nil, err
 	}
+
+	req, err := http.NewRequest(http.MethodPost, inspectUrl, bytes.NewBuffer(obj))
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.SetBasicAuth(name, secret)
 
 	resp, err := clnt.Do(req)
 
