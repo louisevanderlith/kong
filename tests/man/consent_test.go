@@ -21,14 +21,20 @@ func TestConsent(t *testing.T) {
 	}
 
 	// Apply Consent to Partial token
-	usrClms, err := entity.Manager.Consent(partial, map[string]bool{"phone": true})
+	usrClms, err := entity.Manager.Consent(partial, map[string]bool{"name": true, "phone": true})
 
 	if err != nil {
 		t.Error("Consent Error", err)
 		return
 	}
 
-	act := usrClms.GetClaimString("phone")
+	act := usrClms.GetClaimString("name")
+
+	if act != "User 1" {
+		t.Error("Unexpected", act)
+	}
+
+	act = usrClms.GetClaimString("phone")
 
 	if act != "0841236789" {
 		t.Error("Unexpected", act)
