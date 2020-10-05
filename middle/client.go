@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -73,10 +72,9 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 		tidn := context.WithValue(idn, "token", tkn)
 
 		if claims.HasUser() && len(ci.managerUrl) > 0 {
-			usrclaims, err := FetchUserIdentity(http.DefaultClient, []byte(tkn), ci.managerUrl)
+			usrclaims, err := FetchUserIdentity(http.DefaultClient, []byte(claims.GetUserToken()), ci.managerUrl)
 
 			if err != nil {
-				log.Println("User Exchange Error", err)
 				http.Error(w, "", http.StatusUnauthorized)
 				return
 			}
