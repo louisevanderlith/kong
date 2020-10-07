@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"github.com/louisevanderlith/kong/tokens"
 	"io/ioutil"
 	"net/http"
@@ -21,6 +20,7 @@ func ObtainToken(srvr *httptest.Server, usertoken []byte, clientId, secret strin
 		Token:  string(usertoken),
 		Claims: scopes,
 	}
+
 	obj, err := json.Marshal(tknReq)
 
 	if err != nil {
@@ -135,7 +135,7 @@ func ObtainInfo(srvr *httptest.Server, token, clientId, secret string) (tokens.C
 }
 
 func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewServer(GetSecureRoutes())
 	defer ts.Close()
 
 	_, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
@@ -147,7 +147,7 @@ func TestHandleTokenPOST_NoUserRequired(t *testing.T) {
 }
 
 func TestHandleTokenPOST_UserRequired(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewServer(GetSecureRoutes())
 	defer ts.Close()
 	_, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.user.view": true})
 
@@ -163,7 +163,7 @@ func TestHandleTokenPOST_UserRequired(t *testing.T) {
 }
 
 func TestHandleInspectPOST(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewServer(GetSecureRoutes())
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
@@ -187,7 +187,7 @@ func TestHandleInspectPOST(t *testing.T) {
 }
 
 func TestHandleInfoPOST(t *testing.T) {
-	ts := httptest.NewServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewServer(GetSecureRoutes())
 	defer ts.Close()
 
 	tkn, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})

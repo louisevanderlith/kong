@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
-	"github.com/louisevanderlith/kong/samples/servers/secure"
 	"io/ioutil"
 	http "net/http"
 	"net/http/cookiejar"
@@ -70,10 +69,10 @@ func ObtainUserLogin(manServer *httptest.Server, secServer *httptest.Server, cli
 }
 
 func TestHandleLoginPOST(t *testing.T) {
-	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewTLSServer(GetSecureRoutes())
 	defer ts.Close()
 
-	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
+	tm := httptest.NewTLSServer(GetEntityRoutes(ts.Client(), ts.URL))
 	defer tm.Close()
 
 	ut, err := ObtainUserLogin(tm, ts, "kong.viewr", "user@fake.com", "user1pass")
@@ -89,10 +88,10 @@ func TestHandleLoginPOST(t *testing.T) {
 }
 
 func TestHandleConsentGET_NoUser(t *testing.T) {
-	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewTLSServer(GetSecureRoutes())
 	defer ts.Close()
 
-	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
+	tm := httptest.NewTLSServer(GetEntityRoutes(ts.Client(), ts.URL))
 	defer tm.Close()
 
 	ut, err := ObtainUserLogin(tm, ts, "kong.viewr", "user@fake.com", "user1pass")
@@ -108,10 +107,10 @@ func TestHandleConsentGET_NoUser(t *testing.T) {
 }
 
 func TestHandleConsentGET_User(t *testing.T) {
-	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewTLSServer(GetSecureRoutes())
 	defer ts.Close()
 
-	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
+	tm := httptest.NewTLSServer(GetEntityRoutes(ts.Client(), ts.URL))
 	defer tm.Close()
 
 	ut, err := ObtainUserLogin(tm, ts, "kong.viewr", "user@fake.com", "user1pass")

@@ -1,30 +1,24 @@
 package api
 
 import (
-	"encoding/json"
+	"github.com/louisevanderlith/droxolite/mix"
+	"github.com/louisevanderlith/kong/middle"
 	"log"
 	"net/http"
 )
 
 //Example of a scope that doesn't require user login
 func HandleProfileGET(w http.ResponseWriter, r *http.Request) {
-	claims := r.Context().Value("claims")
+	claims := middle.GetIdentity(r)
 
 	if claims == nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write(nil)
+		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 
-	bits, err := json.Marshal(claims)
+	err := mix.Write(w, mix.JSON(claims))
 
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(nil)
-		return
+		log.Println("Serve Error", err)
 	}
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(bits)
 }

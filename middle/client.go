@@ -2,35 +2,27 @@ package middle
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
-	"fmt"
+	"github.com/louisevanderlith/kong/prime"
+	"github.com/louisevanderlith/kong/stores"
 	"net/http"
 	"strconv"
 	"time"
 )
 
-type ClientInspector struct {
-	id           string
-	secret       string
-	clnt         *http.Client
-	securityUrl  string
-	managerUrl   string
-	authorityUrl string
+type ClientWare interface {
+	Intent(handle http.HandlerFunc, scopes map[string]bool) http.HandlerFunc
+	Callback(w http.ResponseWriter, r *http.Request)
 }
 
-func NewClientInspector(id, secret string, clnt *http.Client, securityUrl, managerUrl, authorityUrl string) ClientInspector {
-	return ClientInspector{
-		id:           id,
-		secret:       secret,
-		clnt:         clnt,
-		securityUrl:  securityUrl,
-		managerUrl:   managerUrl,
-		authorityUrl: authorityUrl,
-	}
+func NewClientMiddleware(svc stores.APPService) ClientWare {
+	return cware{svc}
 }
 
-func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]bool) http.HandlerFunc {
+type cware struct {
+	svc stores.APPService
+}
+
+func (cw cware) Intent(handle http.HandlerFunc, scopes map[string]bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authCookie, _ := r.Cookie("user")
 		usrToken := ""
@@ -39,7 +31,12 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 			usrToken = authCookie.Value
 		}
 
-		tkn, err := FetchToken(ci.clnt, ci.securityUrl, ci.id, ci.secret, usrToken, scopes)
+		tknreq := prime.TokenRequest{
+			UserToken: usrToken,
+			Scopes:    scopes,
+		}
+
+		tknresp, err := cw.svc.RequestToken(tknreq)
 
 		if err != nil {
 			status, err := strconv.Atoi(err.Error())
@@ -50,10 +47,7 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 			}
 
 			if status == http.StatusUnprocessableEntity {
-				cbUrl := fmt.Sprintf("https://%s/callback", r.Host)
-				state := generateStateOauthCookie(w)
-				consntUrl := fmt.Sprintf("%s/consent?state=%s&client=%s&callback=%s", ci.authorityUrl, state, ci.id, cbUrl)
-				http.Redirect(w, r, consntUrl, http.StatusTemporaryRedirect)
+				cw.svc.SendToConsent(w, r, tknresp.Expires)
 				return
 			}
 
@@ -61,7 +55,7 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 			return
 		}
 
-		claims, err := FetchIdentity(http.DefaultClient, []byte(tkn), ci.securityUrl+"/info", ci.id, ci.secret)
+		claims, err := cw.svc.FetchIdentity([]byte(tknresp.Token))
 
 		if err != nil {
 			http.Error(w, "", http.StatusUnauthorized)
@@ -69,10 +63,10 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 		}
 
 		idn := context.WithValue(r.Context(), "claims", claims)
-		tidn := context.WithValue(idn, "token", tkn)
+		tidn := context.WithValue(idn, "token", tknresp.Token)
 
-		if claims.HasUser() && len(ci.managerUrl) > 0 {
-			usrclaims, err := FetchUserIdentity(http.DefaultClient, []byte(tkn), ci.managerUrl)
+		if claims.HasUser() {
+			usrclaims, err := cw.svc.FetchUserIdentity([]byte(tknresp.Token))
 
 			if err != nil {
 				http.Error(w, "", http.StatusUnauthorized)
@@ -89,7 +83,7 @@ func (ci ClientInspector) Middleware(handle http.HandlerFunc, scopes map[string]
 	}
 }
 
-func (ci ClientInspector) Callback(w http.ResponseWriter, r *http.Request) {
+func (cw cware) Callback(w http.ResponseWriter, r *http.Request) {
 	oauthState, _ := r.Cookie("state")
 
 	state := r.URL.Query()["state"]
@@ -100,26 +94,31 @@ func (ci ClientInspector) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := r.URL.Query()["token"]
-	saveUserTokenCookie(w, token[0])
+
+	if len(token) == 0 {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+
+	exp := r.URL.Query()["exp"]
+
+	if len(exp) == 0 {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+
+	exptime, err := time.Parse(time.StampMicro, exp[0])
+
+	if err != nil {
+		http.Error(w, "", http.StatusInternalServerError)
+	}
+
+	saveUserTokenCookie(w, token[0], exptime)
 
 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
-func saveUserTokenCookie(w http.ResponseWriter, usrToken string) {
-	var expiration = time.Now().Add(1 * time.Hour)
-
+func saveUserTokenCookie(w http.ResponseWriter, usrToken string, expiration time.Time) {
 	cookie := http.Cookie{Name: "user", Value: usrToken, Expires: expiration}
 	http.SetCookie(w, &cookie)
-}
-
-func generateStateOauthCookie(w http.ResponseWriter) string {
-	var expiration = time.Now().Add(1 * time.Hour)
-
-	b := make([]byte, 16)
-	rand.Read(b)
-	state := base64.URLEncoding.EncodeToString(b)
-	cookie := http.Cookie{Name: "state", Value: state, Expires: expiration}
-	http.SetCookie(w, &cookie)
-
-	return state
 }

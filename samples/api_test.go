@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/louisevanderlith/kong/middle"
 	"github.com/louisevanderlith/kong/samples/handlers/api"
-	"github.com/louisevanderlith/kong/samples/servers/secure"
+	"github.com/louisevanderlith/kong/stores"
 	"github.com/louisevanderlith/kong/tokens"
 	"net/http"
 	"net/http/httptest"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestResource_Middleware_SetContext(t *testing.T) {
-	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewTLSServer(GetSecureRoutes())
 	defer ts.Close()
 
 	token, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
@@ -26,8 +26,9 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	ins := middle.NewResourceInspector(ts.Client(), ts.URL, "")
-	handle := ins.Middleware("api.profile.view", "secret", api.HandleProfileGET)
+	svc := stores.NewAPIService(ts.Client(), ts.URL, "")
+	mw := middle.NewResourceInspector(svc)
+	handle := mw.Lock("api.profile.view", "secret", api.HandleProfileGET)
 	handle(rr, req)
 
 	if rr.Code != http.StatusOK {
@@ -36,10 +37,10 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 }
 
 func TestResource_Middleware_SetContext_ForUsers(t *testing.T) {
-	ts := httptest.NewTLSServer(GetSecureRoutes(secure.Security))
+	ts := httptest.NewTLSServer(GetSecureRoutes())
 	defer ts.Close()
 
-	tm := httptest.NewTLSServer(GetManagerRoutes(ts.Client(), ts.URL))
+	tm := httptest.NewTLSServer(GetEntityRoutes(ts.Client(), ts.URL))
 	defer tm.Close()
 
 	token4user, err := ObtainUserLogin(tm, ts, "kong.viewr", "user@fake.com", "user1pass")
@@ -65,9 +66,8 @@ func TestResource_Middleware_SetContext_ForUsers(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
-	ins := middle.NewResourceInspector(ts.Client(), ts.URL, tm.URL)
-	handle := ins.Middleware("api.user.view", "secret", api.HandleUserGET)
-	handle(rr, req)
+	handle := GetApiRoutes(ts.Client(), ts.URL, tm.URL)
+	handle.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		t.Fatal(rr.Code, rr.Body.String())
