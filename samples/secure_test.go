@@ -16,9 +16,9 @@ import (
 
 // Secure is the API for Authentication
 func ObtainToken(srvr *httptest.Server, usertoken []byte, clientId, secret string, scopes map[string]bool) (string, error) {
-	tknReq := prime.QueryRequest{
-		Token:  string(usertoken),
-		Claims: scopes,
+	tknReq := prime.TokenRequest{
+		UserToken: string(usertoken),
+		Scopes:    scopes,
 	}
 
 	obj, err := json.Marshal(tknReq)
