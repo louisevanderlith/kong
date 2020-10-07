@@ -1,29 +1,23 @@
 package prime
 
-import "errors"
-
 type QueryRequest struct {
 	Token  string
 	Claims interface{}
 }
 
 func (q QueryRequest) GetRequirements() (map[string]bool, error) {
-	val, ok := q.Claims.(map[string]interface{})
+	val, isShap := q.Claims.(map[string]bool)
 
-	if !ok {
-		return nil, errors.New("claims incorrect type")
+	if isShap {
+		return val, nil
 	}
+
+	m := q.Claims.(map[string]interface{})
 
 	result := make(map[string]bool)
 
-	for k, v := range val {
-		b, isBool := v.(bool)
-
-		if !isBool {
-			return nil, errors.New("claims value incorrect type")
-		}
-
-		result[k] = b
+	for k, v := range m {
+		result[k] = v.(bool)
 	}
 
 	return result, nil
