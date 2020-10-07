@@ -12,7 +12,7 @@ type fakeResourceStore struct {
 func NewFakeResources() []prime.Resource {
 	return []prime.Resource{
 		prime.NewResource("api.profile.view", "Displays the profile's information", "secret", nil),
-		prime.NewResource("api.user.view", "Displays the user's information", "secret", []string{tokens.UserName, tokens.UserKey, "phone"}),
+		prime.NewResource("api.user.view", "Displays the user's information", "secret", []string{tokens.UserName, tokens.UserKey, "name", "phone"}),
 		prime.NewResource("entity.consent.apply", "Allows applications to update consent", "secret", nil),
 		prime.NewResource("entity.login.apply", "Allows applications to authenticate users", "secret", nil),
 		prime.NewResource("entity.user.view", "Returns user information", "secret", nil),

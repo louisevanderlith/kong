@@ -15,7 +15,7 @@ func TokenPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := prime.QueryRequest{}
+	req := prime.TokenRequest{}
 	err := drx.JSONBody(r, &req)
 
 	if err != nil {
@@ -24,15 +24,7 @@ func TokenPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	require, err := req.GetRequirements()
-
-	if err != nil {
-		log.Println("Get Requirements Error", err)
-		http.Error(w, "", http.StatusBadRequest)
-		return
-	}
-
-	clms, err := _security.RequestToken(clnt, pass, req.Token, require)
+	clms, err := _security.RequestToken(clnt, pass, req.UserToken, req.Scopes)
 
 	if err != nil {
 		log.Println("Request Token Error", err)
