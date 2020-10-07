@@ -2,26 +2,27 @@ package middle
 
 import (
 	"context"
+	"github.com/louisevanderlith/kong/stores"
 	"log"
 	"net/http"
 )
 
-type ResourceInspector struct {
-	clnt        *http.Client
-	securityUrl string
-	managerUrl  string
+type ResourceWare interface {
+	Lock(scope, secret string, handle http.HandlerFunc) http.HandlerFunc
 }
 
-func NewResourceInspector(clnt *http.Client, securityUrl, managerUrl string) ResourceInspector {
-	return ResourceInspector{
-		clnt:        clnt,
-		securityUrl: securityUrl,
-		managerUrl:  managerUrl,
+func NewResourceInspector(svc stores.APIService) ResourceWare {
+	return rware{
+		svc: svc,
 	}
 }
 
+type rware struct {
+	svc stores.APIService
+}
+
 //ResourceMiddleware
-func (ins ResourceInspector) Middleware(scope, secret string, handle http.HandlerFunc) http.HandlerFunc {
+func (rw rware) Lock(scope, secret string, handle http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, err := GetBearerToken(r)
 
@@ -31,7 +32,7 @@ func (ins ResourceInspector) Middleware(scope, secret string, handle http.Handle
 			return
 		}
 
-		claims, err := FetchIdentity(ins.clnt, []byte(token), ins.securityUrl+"/inspect", scope, secret)
+		claims, err := rw.svc.InspectIdentity(scope, secret, []byte(token))
 
 		if err != nil {
 			log.Println("Exchange Error", err)
@@ -42,8 +43,8 @@ func (ins ResourceInspector) Middleware(scope, secret string, handle http.Handle
 		idn := context.WithValue(r.Context(), "claims", claims)
 		r = r.WithContext(idn)
 
-		if claims.HasUser() && len(ins.managerUrl) > 0 {
-			usrclaims, err := FetchUserIdentity(ins.clnt, []byte(token), ins.managerUrl)
+		if claims.HasUser() {
+			usrclaims, err := rw.svc.FetchUserIdentity([]byte(token))
 
 			if err != nil {
 				log.Println("User Exchange Error", err)
@@ -54,6 +55,6 @@ func (ins ResourceInspector) Middleware(scope, secret string, handle http.Handle
 			r = r.WithContext(idn)
 		}
 
-		handle(w, r)
+		handle.ServeHTTP(w, r)
 	}
 }

@@ -1,6 +1,8 @@
 package stores
 
-import "github.com/louisevanderlith/kong/prime"
+import (
+	"github.com/louisevanderlith/kong/prime"
+)
 
 type SecureStore interface {
 	GetProfile(id string) (prime.Profile, error)
