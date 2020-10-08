@@ -5,14 +5,11 @@ import (
 	"github.com/louisevanderlith/droxolite/drx"
 	"github.com/louisevanderlith/droxolite/mix"
 	"github.com/louisevanderlith/kong/prime"
-	"html/template"
 	"log"
 	"net/http"
 )
 
-func LoginGETHandler(tmpl *template.Template) http.HandlerFunc {
-	pge := mix.PreparePage("Login", tmpl, "./views/login.html")
-	//pge.AddMenu(FullMenu())
+func LoginGETHandler(pge mix.MixerFactory) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		client := drx.FindQueryParam(r, "client")
 
