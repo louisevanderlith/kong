@@ -15,7 +15,7 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	ts := httptest.NewTLSServer(GetSecureRoutes())
 	defer ts.Close()
 
-	token, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
+	tknresp, err := ObtainToken(ts, []byte{}, "kong.viewr", "secret", map[string]bool{"api.profile.view": true})
 
 	if err != nil {
 		t.Fatal("Obtain Token Error", err)
@@ -23,7 +23,7 @@ func TestResource_Middleware_SetContext(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+tknresp.Token)
 	rr := httptest.NewRecorder()
 
 	svc := stores.NewAPIService(ts.Client(), ts.URL, "")
@@ -50,20 +50,20 @@ func TestResource_Middleware_SetContext_ForUsers(t *testing.T) {
 		return
 	}
 
-	token, err := ObtainToken(ts, []byte(token4user), "kong.viewr", "secret", map[string]bool{"api.user.view": true})
+	tknresp, err := ObtainToken(ts, []byte(token4user), "kong.viewr", "secret", map[string]bool{"api.user.view": true})
 
 	if err != nil {
 		t.Fatal("Obtain Token Error", err)
 		return
 	}
 
-	if len(token) == 0 {
+	if len(tknresp.Token) == 0 {
 		t.Error("token length 0")
 		return
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/user", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+tknresp.Token)
 	rr := httptest.NewRecorder()
 
 	handle := GetApiRoutes(ts.Client(), ts.URL, tm.URL)

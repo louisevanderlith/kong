@@ -2,6 +2,7 @@ package securitymanager
 
 import (
 	"github.com/louisevanderlith/droxolite/drx"
+	"github.com/louisevanderlith/droxolite/mix"
 	"github.com/louisevanderlith/kong/prime"
 	"log"
 	"net/http"
@@ -40,7 +41,12 @@ func TokenPOSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = w.Write([]byte(tkn))
+	exp, _ := clms.ExpiresAt()
+
+	err = mix.Write(w, mix.JSON(prime.TokenResponse{
+		Token:   tkn,
+		Expires: exp,
+	}))
 
 	if err != nil {
 		log.Println("Serve Error", err)

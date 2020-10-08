@@ -34,7 +34,7 @@ func ObtainUserLogin(manServer *httptest.Server, secServer *httptest.Server, cli
 	}
 
 	req, err := http.NewRequest(http.MethodPost, manServer.URL+"/login", bytes.NewBuffer(obj))
-	req.Header.Set("Authorization", "Bearer "+authtkn)
+	req.Header.Set("Authorization", "Bearer "+authtkn.Token)
 
 	if err != nil {
 		return "", err

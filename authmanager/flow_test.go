@@ -8,7 +8,6 @@ import (
 )
 
 func init() {
-
 	svc := stores.NewAuthService(http.DefaultClient, "", "", "kong.auth", "secret")
 	InitializeManager(svc, false)
 }
