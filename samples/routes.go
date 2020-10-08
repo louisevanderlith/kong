@@ -3,6 +3,7 @@ package samples
 import (
 	"github.com/gorilla/mux"
 	"github.com/louisevanderlith/droxolite/drx"
+	"github.com/louisevanderlith/droxolite/mix"
 	"github.com/louisevanderlith/kong/authmanager"
 	"github.com/louisevanderlith/kong/entitymanager"
 	"github.com/louisevanderlith/kong/fakes"
@@ -11,6 +12,7 @@ import (
 	"github.com/louisevanderlith/kong/samples/handlers/viewr"
 	"github.com/louisevanderlith/kong/securitymanager"
 	"github.com/louisevanderlith/kong/stores"
+	"html/template"
 	"net/http"
 )
 
@@ -26,13 +28,29 @@ func GetAuthRoutes(client *http.Client, securityUrl, entityUrl, name, secret str
 
 	authsvc := stores.NewAuthService(client, securityUrl, entityUrl, name, secret)
 	authmanager.InitializeManager(authsvc, true)
-	r.HandleFunc("/login", authmanager.LoginGETHandler(tmpl)).Methods(http.MethodGet)
+	authtmpl := newAuthTemplate(tmpl)
+	r.HandleFunc("/login", authtmpl.Page("Login", "./views/login.html", authmanager.LoginGETHandler)).Methods(http.MethodGet)
 	r.HandleFunc("/login", authmanager.HandleLoginPOST).Methods(http.MethodPost)
 	r.HandleFunc("/consent", authmanager.InitialConsentHandler).Queries("client", "{client}", "callback", "{callback}", "state", "{state}").Methods(http.MethodGet)
-	r.HandleFunc("/consent", authmanager.UserConsentHandler(tmpl)).Queries("client", "{client}", "state", "{state}", "partial", "{partial}").Methods(http.MethodGet)
+	r.HandleFunc("/consent", authtmpl.Page("Consent", "./views/consent.html", authmanager.UserConsentHandler)).Queries("client", "{client}", "state", "{state}", "partial", "{partial}").Methods(http.MethodGet)
 	r.HandleFunc("/consent", authmanager.ConsentPOSTHandler).Methods(http.MethodPost)
 
 	return r
+}
+
+type authtmpl struct {
+	tmpl *template.Template
+}
+
+func newAuthTemplate(tmpl *template.Template) authtmpl {
+	return authtmpl{tmpl: tmpl}
+}
+
+func (t authtmpl) Page(title, path string, pageFunc func(factory mix.MixerFactory) http.HandlerFunc) http.HandlerFunc {
+	pge := mix.PreparePage(title, t.tmpl, path)
+	pge.AddModifier(middle.IdentityModifer)
+
+	return pageFunc(pge)
 }
 
 //GetEntityRoutes returns a router for the User API

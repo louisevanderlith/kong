@@ -5,7 +5,6 @@ import (
 	"github.com/louisevanderlith/droxolite/drx"
 	"github.com/louisevanderlith/droxolite/mix"
 	"github.com/louisevanderlith/kong/prime"
-	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -55,9 +54,7 @@ func InitialConsentHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, loginUrl, http.StatusFound)
 }
 
-func UserConsentHandler(tmpl *template.Template) http.HandlerFunc {
-	pge := mix.PreparePage("Consent", tmpl, "./views/consent.html")
-
+func UserConsentHandler(pge mix.MixerFactory) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		partial := drx.FindQueryParam(r, "partial")
 
