@@ -7,15 +7,13 @@ import (
 	"fmt"
 	"github.com/louisevanderlith/kong/prime"
 	"github.com/louisevanderlith/kong/tokens"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
 // Secure is the API for Authentication
-func ObtainToken(srvr *httptest.Server, usertoken []byte, clientId, secret string, scopes map[string]bool) (string, error) {
+func ObtainToken(srvr *httptest.Server, usertoken []byte, clientId, secret string, scopes map[string]bool) (prime.TokenResponse, error) {
 	tknReq := prime.TokenRequest{
 		UserToken: string(usertoken),
 		Scopes:    scopes,
@@ -24,38 +22,41 @@ func ObtainToken(srvr *httptest.Server, usertoken []byte, clientId, secret strin
 	obj, err := json.Marshal(tknReq)
 
 	if err != nil {
-		return "", err
+		return prime.TokenResponse{}, err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, srvr.URL+"/token", bytes.NewBuffer(obj))
 	req.SetBasicAuth(clientId, secret)
 
 	if err != nil {
-		return "", err
+		return prime.TokenResponse{}, err
 	}
 
 	resp, err := srvr.Client().Do(req)
 
 	if err != nil {
-		return "", err
+		return prime.TokenResponse{}, err
 	}
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if len(body) == 0 {
-		return "", errors.New("no response")
+	if resp.StatusCode == http.StatusUnprocessableEntity {
+		return prime.TokenResponse{}, errors.New("user login required")
 	}
 
-	if resp.StatusCode == http.StatusUnprocessableEntity {
-		return "", errors.New("user login required")
+	tknresp := prime.TokenResponse{}
+	dec := json.NewDecoder(resp.Body)
+	err = dec.Decode(&tknresp)
+
+	if err != nil {
+		return prime.TokenResponse{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.New(strings.Replace(string(body), "\n", "", 1))
+		return prime.TokenResponse{}, errors.New("not OK")
 	}
 
-	return string(body), nil
+	return tknresp, nil
 }
 
 func ObtainInspection(srvr *httptest.Server, token, resource, secret string) (tokens.Claims, error) {
@@ -173,7 +174,7 @@ func TestHandleInspectPOST(t *testing.T) {
 		return
 	}
 
-	clms, err := ObtainInspection(ts, tkn, "api.profile.view", "secret")
+	clms, err := ObtainInspection(ts, tkn.Token, "api.profile.view", "secret")
 
 	if err != nil {
 		t.Fatal("Obtain Inspection Error", err)
@@ -197,7 +198,7 @@ func TestHandleInfoPOST(t *testing.T) {
 		return
 	}
 
-	clms, err := ObtainInfo(ts, tkn, "kong.viewr", "secret")
+	clms, err := ObtainInfo(ts, tkn.Token, "kong.viewr", "secret")
 
 	if err != nil {
 		t.Fatal("Obtain Info Error", err)

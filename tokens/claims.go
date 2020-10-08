@@ -72,6 +72,12 @@ func (c *claims) ExpiresAt() (time.Time, error) {
 		return time.Time{}, errors.New("'expires at' not in token")
 	}
 
+	tval, isTime := val.(time.Time)
+
+	if isTime {
+		return tval, nil
+	}
+
 	return time.Parse(time.RFC3339Nano, val.(string))
 }
 
