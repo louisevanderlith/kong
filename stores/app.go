@@ -43,7 +43,7 @@ func (a appsvc) RequestToken(tokenreq prime.TokenRequest) (prime.TokenResponse, 
 
 func (a appsvc) SendToConsent(w http.ResponseWriter, r *http.Request, exp time.Time) {
 	state := generateStateOauthCookie(w, exp)
-	consntUrl := fmt.Sprintf("%s/consent?state=%s&client=%s&callback=%s", a.authorityUrl, state, a.name, r.URL)
+	consntUrl := fmt.Sprintf("%s/consent?state=%s&client=%s&callback=%s", a.authorityUrl, state, a.name, r.RequestURI)
 	http.Redirect(w, r, consntUrl, http.StatusTemporaryRedirect)
 }
 

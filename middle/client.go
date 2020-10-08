@@ -115,7 +115,14 @@ func (cw cware) Callback(w http.ResponseWriter, r *http.Request) {
 
 	saveUserTokenCookie(w, token[0], exptime)
 
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	redir := r.URL.Query()["redirect"]
+
+	if len(token) == 0 {
+		http.Error(w, "", http.StatusBadRequest)
+		return
+	}
+
+	http.Redirect(w, r, redir[0], http.StatusTemporaryRedirect)
 }
 
 func saveUserTokenCookie(w http.ResponseWriter, usrToken string, expiration time.Time) {
