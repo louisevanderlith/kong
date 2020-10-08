@@ -18,6 +18,9 @@ func InitialConsentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("REF:", r.Referer())
+	log.Println("CB:", cbUrl)
+
 	state := drx.FindQueryParam(r, "state")
 
 	if len(state) == 0 {
@@ -42,7 +45,7 @@ func InitialConsentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessn.Values[state] = cbUrl
+	sessn.Values[state] = r.Referer()
 
 	err = sessn.Save(r, w)
 	if err != nil {
